@@ -30,76 +30,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 export default function Index() {
-  const { toast } = useToast();
-  const [loadingSeeds, setLoadingSeeds] = useState(false);
-
-  // Mock project stats
-  const stats = {
-    totalProjects: 3,
-    activeProjects: 2,
-    completedActivities: 1250,
-    totalActivities: 2100,
-    overallProgress: 67
-  };
-
-  const quickActions = [
-    {
-      title: "Capturar Progreso",
-      description: "Registrar avance diario de actividades",
-      icon: Camera,
-      href: "/capture",
-      color: "bg-chart-1"
-    },
-    {
-      title: "Dashboard",
-      description: "Ver resumen del proyecto",
-      icon: BarChart3,
-      href: "/dashboard",
-      color: "bg-chart-2"
-    },
-    {
-      title: "Importar Plan",
-      description: "Subir estructura WBS desde CSV",
-      icon: FileSpreadsheet,
-      href: "/import",
-      color: "bg-chart-3"
-    },
-    {
-      title: "Aprobar Reportes",
-      description: "Validar partes diarios",
-      icon: CheckCircle,
-      href: "/approve",
-      color: "bg-chart-4"
-    }
-  ];
-
-  const handleInsertSeedData = async () => {
-    setLoadingSeeds(true);
-    try {
-      const result = await insertSeedData();
-      if (result.success) {
-        toast({
-          title: "Datos de prueba insertados",
-          description: "Se ha creado el proyecto demo con actividades de ejemplo",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudieron insertar los datos de prueba",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al insertar los datos",
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingSeeds(false);
-    }
-  };
-
   return (
     <div className="space-y-16">
       {/* Hero Section */}
@@ -127,20 +57,21 @@ export default function Index() {
             className="gap-2 text-lg px-8 py-6"
             asChild
           >
-            <Link to="/capture">
+            <Link to="/auth">
               <Camera className="h-5 w-5" />
-              Comenzar Captura
+              Acceder a la Aplicación
             </Link>
           </Button>
           <Button 
-            onClick={handleInsertSeedData}
-            disabled={loadingSeeds}
             variant="outline"
             size="lg"
             className="gap-2 text-lg px-8 py-6"
+            asChild
           >
-            <Database className="h-5 w-5" />
-            {loadingSeeds ? "Insertando..." : "Ver Demo"}
+            <Link to="/auth">
+              <Database className="h-5 w-5" />
+              Ver Demo Completo
+            </Link>
           </Button>
         </div>
       </div>
@@ -357,66 +288,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Estado actual del proyecto demo */}
-      <section className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground">Estado Actual del Proyecto Demo</h2>
-          <p className="text-muted-foreground">Explora todas las funcionalidades con datos de ejemplo</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="construction-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
-              <Construction className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProjects}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.activeProjects} en construcción
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="construction-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Actividades</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completedActivities}</div>
-              <p className="text-xs text-muted-foreground">
-                de {stats.totalActivities} completadas
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="construction-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Progreso General</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.overallProgress}%</div>
-              <Progress value={stats.overallProgress} className="mt-2" />
-            </CardContent>
-          </Card>
-
-          <Card className="construction-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cronograma</CardTitle>
-              <Calendar className="h-4 w-4 text-chart-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-chart-success">En Tiempo</div>
-              <p className="text-xs text-muted-foreground">
-                Según planificación
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       {/* Características Principales */}
       <section className="space-y-12">
         <div className="text-center space-y-4">
@@ -490,29 +361,48 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Acciones Rápidas - Mejoradas */}
+      {/* Acciones Rápidas - Simplificadas para landing */}
       <section className="space-y-8">
         <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold text-foreground">Explora la Plataforma</h2>
-          <p className="text-xl text-muted-foreground">Accede directamente a los módulos principales de FieldProgress</p>
+          <h2 className="text-3xl font-bold text-foreground">Módulos Principales</h2>
+          <p className="text-xl text-muted-foreground">Conoce las funcionalidades clave de FieldProgress</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickActions.map((action) => (
-            <Card key={action.title} className="construction-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
-              <Link to={action.href}>
-                <CardContent className="p-6">
-                  <div className={`w-16 h-16 rounded-xl ${action.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                    <action.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="font-bold text-xl mb-3">{action.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{action.description}</p>
-                  <div className="flex items-center text-primary group-hover:text-primary/80 font-medium">
-                    <span className="text-sm">Acceder al módulo</span>
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </CardContent>
-              </Link>
+          {[
+            {
+              title: "Capturar Progreso",
+              description: "Registra avance desde el campo con fotos y datos precisos",
+              icon: Camera,
+              color: "bg-chart-primary"
+            },
+            {
+              title: "Aprobar Reportes", 
+              description: "Sistema de validación multinivel con trazabilidad",
+              icon: CheckSquare,
+              color: "bg-chart-success"
+            },
+            {
+              title: "Importar Planificación",
+              description: "Carga tu WBS desde Excel manteniendo la estructura",
+              icon: FileSpreadsheet,
+              color: "bg-chart-warning"
+            },
+            {
+              title: "Dashboard Analytics",
+              description: "Curvas S, KPIs y análisis en tiempo real",
+              icon: BarChart3,
+              color: "bg-chart-secondary"
+            }
+          ].map((feature, index) => (
+            <Card key={index} className="construction-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className={`w-16 h-16 rounded-xl ${feature.color} flex items-center justify-center mb-6 shadow-lg`}>
+                  <feature.icon className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-bold text-xl mb-3">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -532,20 +422,21 @@ export default function Index() {
             className="gap-2 text-lg px-8 py-6"
             asChild
           >
-            <Link to="/capture">
+            <Link to="/auth">
               <Camera className="h-5 w-5" />
               Empezar Ahora
             </Link>
           </Button>
           <Button 
-            onClick={handleInsertSeedData}
-            disabled={loadingSeeds}
             variant="outline"
             size="lg"
             className="gap-2 text-lg px-8 py-6"
+            asChild
           >
-            <Database className="h-5 w-5" />
-            {loadingSeeds ? "Cargando Demo..." : "Explorar Demo Completo"}
+            <Link to="/auth">
+              <Database className="h-5 w-5" />
+              Explorar Demo Completo
+            </Link>
           </Button>
         </div>
         

@@ -3,10 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { PublicLayout } from "@/components/layout/PublicLayout";
+import { AuthenticatedLayout } from "@/components/layout/AuthenticatedLayout";
+
+// Pages
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ProgressCapture from "./pages/ProgressCapture";
@@ -19,51 +21,89 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <AuthProvider>
+        <Toaster />
+        <Sonner />
         <BrowserRouter>
-          <SidebarProvider>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={
+          <Routes>
+            {/* Página pública */}
+            <Route 
+              path="/" 
+              element={
+                <PublicLayout>
+                  <Index />
+                </PublicLayout>
+              } 
+            />
+            
+            {/* Autenticación */}
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Rutas protegidas con nueva navegación */}
+            <Route 
+              path="/dashboard" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><Index /></AppLayout>
+                  <AuthenticatedLayout>
+                    <Dashboard />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
+              } 
+            />
+            <Route 
+              path="/capture" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><Dashboard /></AppLayout>
+                  <AuthenticatedLayout>
+                    <ProgressCapture />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/capture" element={
+              } 
+            />
+            <Route 
+              path="/approve" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><ProgressCapture /></AppLayout>
+                  <AuthenticatedLayout>
+                    <Dashboard />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/approve" element={
+              } 
+            />
+            <Route 
+              path="/import" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><div>Approval Page</div></AppLayout>
+                  <AuthenticatedLayout>
+                    <ImportPlan />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/import" element={
+              } 
+            />
+            <Route 
+              path="/reports" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><ImportPlan /></AppLayout>
+                  <AuthenticatedLayout>
+                    <Dashboard />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/reports" element={
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
                 <ProtectedRoute>
-                  <AppLayout><div>Reports Page</div></AppLayout>
+                  <AuthenticatedLayout>
+                    <Dashboard />
+                  </AuthenticatedLayout>
                 </ProtectedRoute>
-              } />
-              <Route path="/analytics" element={
-                <ProtectedRoute>
-                  <AppLayout><div>Analytics Page</div></AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </SidebarProvider>
+              } 
+            />
+            
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
