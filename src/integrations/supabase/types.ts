@@ -482,6 +482,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      make_user_supervisor: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
