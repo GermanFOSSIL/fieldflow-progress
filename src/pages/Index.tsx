@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
   Construction, 
@@ -25,9 +24,6 @@ import {
   Calendar
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { insertSeedData } from "@/lib/seed-data";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 export default function Index() {
   return (
