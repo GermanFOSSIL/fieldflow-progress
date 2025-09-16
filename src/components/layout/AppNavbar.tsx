@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { SmartProjectSelector } from "./SmartProjectSelector";
+import { ProjectSelectorIcon } from "./ProjectSelectorIcon";
 import { 
   HardHat, 
   Menu, 
@@ -14,7 +14,8 @@ import {
   Bell,
   LogOut,
   MessageCircle,
-  MessageSquare
+  MessageSquare,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +36,7 @@ const menuItems = [
   { title: "Reportes", url: "/reports", icon: FileText },
   { title: "Analítica", url: "/analytics", icon: BarChart3 },
   { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
+  { title: "Asistente IA", url: "/ai-assistant", icon: Bot },
   { title: "Templates WhatsApp", url: "/whatsapp-templates", icon: MessageSquare },
   { title: "Base de Datos", url: "/database", icon: BarChart3 },
 ];
@@ -89,7 +91,7 @@ export function AppNavbar() {
 
           {/* Selector de proyecto y acciones */}
           <div className="flex items-center space-x-4">
-            <SmartProjectSelector />
+            <ProjectSelectorIcon />
             <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
               <Bell className="h-5 w-5" />
             </Button>
