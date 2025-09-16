@@ -1,0 +1,28 @@
+project_code,area_name,system_name,subsystem_name,activity_code,activity_name,unit,boq_qty,weight
+OG-001,Área de Proceso,Sistema Tuberías,Líneas Principales,P-001,Soldadura líneas de 6" Schedule 40,jnt,120,15.5
+OG-001,Área de Proceso,Sistema Tuberías,Líneas Principales,P-002,Instalación válvulas de compuerta 6",u,24,8.2
+OG-001,Área de Proceso,Sistema Tuberías,Líneas Principales,P-003,Prueba hidrostática líneas principales,m,450,12.8
+OG-001,Área de Proceso,Sistema Tuberías,Líneas Secundarias,P-004,Soldadura líneas de 2" Schedule 80,jnt,85,6.7
+OG-001,Área de Proceso,Sistema Tuberías,Líneas Secundarias,P-005,Instalación válvulas check 2",u,18,4.3
+OG-001,Área de Proceso,Sistema Instrumentos,Transmisores Presión,I-001,Instalación transmisores de presión,u,45,9.8
+OG-001,Área de Proceso,Sistema Instrumentos,Transmisores Presión,I-002,Calibración transmisores presión,u,45,6.2
+OG-001,Área de Proceso,Sistema Instrumentos,Medidores Flujo,I-003,Instalación medidores de flujo,u,12,12.4
+OG-001,Área de Proceso,Sistema Instrumentos,Medidores Flujo,I-004,Configuración medidores flujo,u,12,8.9
+OG-001,Área de Proceso,Sistema Eléctrico,Motores Bombas,E-001,Instalación motores bombas centrífugas,u,8,18.7
+OG-001,Área de Proceso,Sistema Eléctrico,Motores Bombas,E-002,Conexión eléctrica motores,u,8,11.3
+OG-001,Área de Proceso,Sistema Eléctrico,Tableros Control,E-003,Instalación tableros de control,u,6,14.6
+OG-001,Área de Proceso,Sistema Eléctrico,Tableros Control,E-004,Cableado tableros control,m,280,9.4
+OG-001,Separación Gas,Sistema Mecánico,Separadores,M-001,Instalación separador trifásico,u,2,25.8
+OG-001,Separación Gas,Sistema Mecánico,Separadores,M-002,Conexión bridas separador,u,16,7.9
+OG-001,Separación Gas,Sistema Mecánico,Compresores,M-003,Instalación compresor de gas,u,1,32.4
+OG-001,Separación Gas,Sistema Mecánico,Compresores,M-004,Alineación compresor,u,1,19.7
+OG-001,Separación Gas,Sistema Mecánico,Intercambiadores,M-005,Instalación intercambiador de calor,u,3,22.1
+OG-001,Separación Gas,Sistema Mecánico,Intercambiadores,M-006,Prueba de estanqueidad intercambiador,u,3,8.8
+OG-001,Facilidades Superficie,Sistema Civil,Estructuras Metálicas,C-001,Fabricación estructura de soporte,kg,2800,18.9
+OG-001,Facilidades Superficie,Sistema Civil,Estructuras Metálicas,C-002,Montaje estructura de soporte,kg,2800,14.2
+OG-001,Facilidades Superficie,Sistema Civil,Fundaciones,C-003,Excavación para fundaciones,m3,180,5.6
+OG-001,Facilidades Superficie,Sistema Civil,Fundaciones,C-004,Vaciado de concreto fundaciones,m3,180,12.7
+OG-001,Facilidades Superficie,Sistema Seguridad,Detectores Gas,S-001,Instalación detectores de H2S,u,15,6.9
+OG-001,Facilidades Superficie,Sistema Seguridad,Detectores Gas,S-002,Calibración detectores gas,u,15,4.8
+OG-001,Facilidades Superficie,Sistema Seguridad,Sistema Contra Incendio,S-003,Instalación sistema diluvio,m,320,11.5
+OG-001,Facilidades Superficie,Sistema Seguridad,Sistema Contra Incendio,S-004,Prueba sistema contra incendio,sist,1,16.3

@@ -14,12 +14,12 @@ export default function ProgressCapture() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedShift, setSelectedShift] = useState("");
   
-  // Mock data for activities
+  // Mock data para actividades oil & gas
   const activities = [
     {
-      id: "A-0001",
-      name: "Soldadura spool 2\"",
-      unit: "u",
+      id: "P-001",
+      name: "Soldadura líneas de 6\" Schedule 40",
+      unit: "jnt",
       boqQty: 120,
       executed: 78,
       todayQty: 0,
@@ -28,24 +28,24 @@ export default function ProgressCapture() {
       photos: []
     },
     {
-      id: "A-0002", 
-      name: "Soportes tubería",
-      unit: "m",
-      boqQty: 300,
-      executed: 185,
+      id: "I-001", 
+      name: "Instalación transmisores de presión",
+      unit: "u",
+      boqQty: 45,
+      executed: 28,
       todayQty: 0,
       progress: 62,
       comment: "",
       photos: []
     },
     {
-      id: "A-0101",
-      name: "Tendido bandeja principal",
-      unit: "m", 
-      boqQty: 200,
-      executed: 145,
+      id: "M-001",
+      name: "Instalación separador trifásico",
+      unit: "u", 
+      boqQty: 2,
+      executed: 1,
       todayQty: 0,
-      progress: 73,
+      progress: 50,
       comment: "",
       photos: []
     }
@@ -86,7 +86,8 @@ export default function ProgressCapture() {
                   <SelectValue placeholder="Seleccionar proyecto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="FP01">FieldProgress Demo</SelectItem>
+                  <SelectItem value="OG-001">Planta de Procesamiento de Gas San Martín</SelectItem>
+                  <SelectItem value="OG-002">Estación de Bombeo Crudo Medanito</SelectItem>
                 </SelectContent>
               </Select>
             </div>

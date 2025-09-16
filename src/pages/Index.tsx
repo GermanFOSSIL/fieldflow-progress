@@ -66,7 +66,7 @@ export default function Index() {
           >
             <Link to="/auth">
               <Database className="h-5 w-5" />
-              Ver Demo Completo
+              Solicitar Demostración
             </Link>
           </Button>
         </div>

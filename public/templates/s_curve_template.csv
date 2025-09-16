@@ -1,0 +1,16 @@
+week,date,planned_cumulative,actual_cumulative,planned_weekly,actual_weekly,milestone
+1,2024-01-15,3.2,2.8,3.2,2.8,Inicio de proyecto
+2,2024-01-22,6.8,6.1,3.6,3.3,Movilización equipos
+3,2024-01-29,11.5,10.9,4.7,4.8,Fundaciones completadas
+4,2024-02-05,17.2,16.8,5.7,5.9,Estructuras metálicas iniciadas
+5,2024-02-12,23.8,23.2,6.6,6.4,Equipos principales en sitio
+6,2024-02-19,31.1,29.7,7.3,6.5,Montaje separadores
+7,2024-02-26,38.9,37.1,7.8,7.4,Piping principales
+8,2024-03-05,47.2,45.3,8.3,8.2,Instrumentación iniciada
+9,2024-03-12,55.8,53.9,8.6,8.6,Conexiones eléctricas
+10,2024-03-19,64.7,62.8,8.9,8.9,Pruebas de presión
+11,2024-03-26,73.1,71.5,8.4,8.7,Calibración instrumentos
+12,2024-04-02,81.2,79.8,8.1,8.3,Pre-comisionado
+13,2024-04-09,88.6,87.2,7.4,7.4,Comisionado
+14,2024-04-16,95.3,94.1,6.7,6.9,Pruebas finales
+15,2024-04-23,100.0,98.5,4.7,4.4,Entrega proyecto

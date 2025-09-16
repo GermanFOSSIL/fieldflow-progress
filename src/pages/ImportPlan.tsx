@@ -7,8 +7,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, CheckCircle, AlertTriangle, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ImportPlan() {
+  const { toast } = useToast();
   const [uploadStep, setUploadStep] = useState(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -61,6 +63,29 @@ export default function ImportPlan() {
     setUploadStep(3);
   };
 
+  const handleDownloadTemplates = () => {
+    // Crear y descargar ZIP con plantillas
+    const templates = [
+      { name: 'activities_template.csv', path: '/templates/activities_template.csv' },
+      { name: 'projects_template.csv', path: '/templates/projects_template.csv' },
+      { name: 's_curve_template.csv', path: '/templates/s_curve_template.csv' }
+    ];
+
+    templates.forEach(template => {
+      const link = document.createElement('a');
+      link.href = template.path;
+      link.download = template.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    toast({
+      title: "Plantillas Descargadas",
+      description: "Se han descargado 3 plantillas CSV de ejemplo.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -69,7 +94,7 @@ export default function ImportPlan() {
           <h1 className="text-3xl font-bold">Importar Plan del Proyecto</h1>
           <p className="text-muted-foreground">Subir archivos CSV/Excel para crear estructura del proyecto y actividades</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleDownloadTemplates}>
           <Download className="mr-2 h-4 w-4" />
           Descargar Plantillas
         </Button>

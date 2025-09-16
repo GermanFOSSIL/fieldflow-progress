@@ -22,7 +22,7 @@ export default function Analytics() {
 
   const systemAnalytics = [
     {
-      name: "Sistema Proceso",
+      name: "Sistema Tuberías",
       planned: 80,
       actual: 78,
       efficiency: 97.5,
@@ -31,7 +31,7 @@ export default function Analytics() {
       activitiesTotal: 58
     },
     {
-      name: "Sistema Eléctrico", 
+      name: "Sistema Instrumentos", 
       planned: 60,
       actual: 45,
       efficiency: 75.0,
@@ -40,7 +40,7 @@ export default function Analytics() {
       activitiesTotal: 48
     },
     {
-      name: "Sistema Instrumentos",
+      name: "Sistema Eléctrico",
       planned: 85,
       actual: 91,
       efficiency: 107.1,
@@ -49,7 +49,7 @@ export default function Analytics() {
       activitiesTotal: 37
     },
     {
-      name: "Piping Rack",
+      name: "Facilidades Superficie",
       planned: 70,
       actual: 62,
       efficiency: 88.6,
@@ -60,11 +60,12 @@ export default function Analytics() {
   ];
 
   const weeklyProgress = [
-    { week: "Sem 1", planned: 15, actual: 12 },
-    { week: "Sem 2", planned: 30, actual: 28 },
-    { week: "Sem 3", planned: 45, actual: 41 },
-    { week: "Sem 4", planned: 60, actual: 55 },
-    { week: "Sem 5", planned: 75, actual: 67 }
+    { week: "Sem 1", planned: 3.2, actual: 2.8 },
+    { week: "Sem 2", planned: 6.8, actual: 6.1 },
+    { week: "Sem 3", planned: 11.5, actual: 10.9 },
+    { week: "Sem 4", planned: 17.2, actual: 16.8 },
+    { week: "Sem 5", planned: 23.8, actual: 23.2 },
+    { week: "Sem 6", planned: 31.1, actual: 29.7 }
   ];
 
   return (

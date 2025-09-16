@@ -15,16 +15,16 @@ export default function Dashboard() {
   };
 
   const systemProgress = [
-    { name: "Sistema Proceso", progress: 78, status: "on-track" },
-    { name: "Sistema Eléctrico", progress: 45, status: "delayed" },
-    { name: "Sistema Instrumentos", progress: 91, status: "ahead" },
-    { name: "Piping Rack", progress: 62, status: "on-track" },
+    { name: "Sistema Tuberías", progress: 78, status: "on-track" },
+    { name: "Sistema Instrumentos", progress: 45, status: "delayed" },
+    { name: "Sistema Eléctrico", progress: 91, status: "ahead" },
+    { name: "Facilidades Superficie", progress: 62, status: "on-track" },
   ];
 
   const topDelays = [
-    { activity: "A-0120 Tendido cable 6mm2", variance: -15, unit: "m" },
-    { activity: "A-0002 Soportes tubería", variance: -8, unit: "m" },
-    { activity: "A-0101 Tendido bandeja principal", variance: -5, unit: "m" },
+    { activity: "P-001 Soldadura líneas 6\"", variance: -15, unit: "jnt" },
+    { activity: "I-001 Transmisores presión", variance: -8, unit: "u" },
+    { activity: "E-003 Tableros control", variance: -5, unit: "u" },
   ];
 
   return (
@@ -33,7 +33,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Panel del Proyecto</h1>
-          <p className="text-muted-foreground">FieldProgress Demo - Resumen de Progreso de Construcción</p>
+          <p className="text-muted-foreground">Planta de Procesamiento de Gas San Martín - Resumen de Progreso</p>
         </div>
         <Button variant="default" className="bg-primary text-white">
           <FileText className="mr-2 h-4 w-4" />

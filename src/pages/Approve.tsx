@@ -21,22 +21,22 @@ export default function Approve() {
       status: "sent",
       entries: [
         {
-          id: "A-0001",
-          name: "Soldadura spool 2\"",
-          unit: "u",
+          id: "P-001",
+          name: "Soldadura líneas de 6\" Schedule 40",
+          unit: "jnt",
           boqQty: 120,
           executed: 78,
           todayQty: 12,
-          comment: "Soldaduras completadas en área 1"
+          comment: "Soldaduras completadas según WPS-001"
         },
         {
-          id: "A-0002", 
-          name: "Soportes tubería",
-          unit: "m",
-          boqQty: 300,
-          executed: 185,
-          todayQty: 15,
-          comment: "Instalación normal, sin inconvenientes"
+          id: "I-001", 
+          name: "Instalación transmisores de presión",
+          unit: "u",
+          boqQty: 45,
+          executed: 28,
+          todayQty: 3,
+          comment: "Transmisores calibrados y probados"
         }
       ]
     },
@@ -48,13 +48,13 @@ export default function Approve() {
       status: "sent",
       entries: [
         {
-          id: "A-0101",
-          name: "Tendido bandeja principal",
-          unit: "m",
-          boqQty: 200,
-          executed: 145,
-          todayQty: 8,
-          comment: "Avance lento por condiciones climáticas"
+          id: "M-001",
+          name: "Instalación separador trifásico",
+          unit: "u",
+          boqQty: 2,
+          executed: 1,
+          todayQty: 1,
+          comment: "Separador posicionado y nivelado"
         }
       ]
     }
