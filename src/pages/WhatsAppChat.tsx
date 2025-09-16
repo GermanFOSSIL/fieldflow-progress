@@ -28,7 +28,7 @@ interface Message {
   timestamp: Date;
   sender: 'user' | 'bot';
   status: 'sent' | 'delivered' | 'read';
-  type: 'text' | 'location' | 'image' | 'report' | 'alert' | 'inventory' | 'weather' | 'help';
+  type: 'text' | 'location' | 'image' | 'report' | 'alert' | 'inventory' | 'weather' | 'help' | 'template';
   metadata?: any;
 }
 
@@ -188,6 +188,7 @@ export default function WhatsAppChat() {
       case 'alert': return <AlertCircle className="h-4 w-4" />;
       case 'weather': return <Clock className="h-4 w-4" />;
       case 'inventory': return <Wrench className="h-4 w-4" />;
+      case 'template': return <MessageCircle className="h-4 w-4" />;
       default: return <BarChart3 className="h-4 w-4" />;
     }
   };
