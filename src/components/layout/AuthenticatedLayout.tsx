@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { useState, ReactNode } from "react";
 import { ModernSidebar } from "./ModernSidebar";
 
 interface AuthenticatedLayoutProps {
@@ -6,10 +6,11 @@ interface AuthenticatedLayoutProps {
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   return (
     <div className="min-h-screen flex w-full bg-slate-50">
-      <ModernSidebar />
-      <div className="flex-1 flex flex-col">
+      <ModernSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-64'}`}>
         <main className="flex-1 p-6 overflow-auto">
           {children}
         </main>

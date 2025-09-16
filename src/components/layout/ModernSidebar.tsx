@@ -56,8 +56,7 @@ const navigationSections = [
   }
 ];
 
-export function ModernSidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function ModernSidebar({ isCollapsed, setIsCollapsed }: { isCollapsed: boolean; setIsCollapsed: (collapsed: boolean) => void }) {
   const location = useLocation();
   const { user, signOut } = useAuth();
   
@@ -70,8 +69,8 @@ export function ModernSidebar() {
 
   return (
     <div className={`
-      relative h-screen bg-gradient-to-b from-slate-50 to-white border-r border-slate-200/50
-      transition-all duration-300 ease-in-out
+      fixed left-0 top-0 h-screen bg-gradient-to-b from-slate-50 to-white border-r border-slate-200/50
+      transition-all duration-300 ease-in-out z-40
       ${isCollapsed ? 'w-16' : 'w-64'}
     `}>
       
@@ -92,12 +91,12 @@ export function ModernSidebar() {
       <div className="p-4 border-b border-slate-200/50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">CP</span>
+            <span className="text-white font-bold text-sm">SC</span>
           </div>
           {!isCollapsed && (
             <div>
-              <h1 className="font-bold text-slate-800">ConstructPro</h1>
-              <p className="text-xs text-slate-500">Gestión de Obras</p>
+            <h1 className="font-bold text-slate-800">Sistema Construcción</h1>
+            <p className="text-xs text-slate-500">Gestión de Proyectos</p>
             </div>
           )}
         </div>

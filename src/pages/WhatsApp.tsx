@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -113,10 +113,12 @@ export default function WhatsApp() {
     }
   ];
 
-  // Initialize messages with mock data if empty
-  if (messages.length === 0) {
-    setMessages(mockMessages);
-  }
+  // Initialize messages with mock data on first render
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages(mockMessages);
+    }
+  }, []);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedContact) return;
