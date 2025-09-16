@@ -7,6 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { WhatsAppStatusBar } from "@/components/WhatsAppStatusBar";
 import { useWhatsAppBot } from "@/hooks/useWhatsAppBot";
+import { useDataQueryBot } from "@/hooks/useDataQueryBot";
+import { useProject } from "@/contexts/ProjectContext";
+import { ProjectSelector } from "@/components/whatsapp/ProjectSelector";
 import { 
   MessageCircle, 
   Send, 
@@ -83,6 +86,8 @@ const mockContacts: Contact[] = [
 
 export default function WhatsAppChat() {
   const { processMessage, isProcessing } = useWhatsAppBot();
+  const { processDataQuery, isProcessing: isQueryProcessing } = useDataQueryBot();
+  const { selectedProject } = useProject();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(mockContacts[0]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -156,7 +161,23 @@ export default function WhatsAppChat() {
 
     // Procesar mensaje con el bot inteligente
     try {
-      const botResponse = await processMessage(messageToProcess, selectedContact.id);
+      // First try data query bot for database queries
+      const queryKeywords = ['progreso', 'avance', 'inventario', 'reporte', 'actividad', 'personal', 'alerta', 'sistema'];
+      const isDataQuery = queryKeywords.some(keyword => 
+        messageToProcess.toLowerCase().includes(keyword)
+      );
+
+      let botResponse;
+      if (isDataQuery && selectedProject) {
+        const dataResponse = await processDataQuery(messageToProcess, selectedProject.id);
+        botResponse = {
+          text: dataResponse.text || 'Consulta procesada exitosamente',
+          type: 'report',
+          metadata: dataResponse.metadata
+        };
+      } else {
+        botResponse = await processMessage(messageToProcess, selectedContact.id);
+      }
       
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -195,6 +216,9 @@ export default function WhatsAppChat() {
 
   return (
     <div className="h-full max-w-7xl mx-auto p-4">
+      <div className="mb-4">
+        <ProjectSelector />
+      </div>
       <WhatsAppStatusBar />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-12rem)]">
         
@@ -324,7 +348,7 @@ export default function WhatsAppChat() {
                       </div>
                     ))}
                     
-                    {isProcessing && (
+                    {(isProcessing || isQueryProcessing) && (
                       <div className="flex justify-start">
                         <div className="bg-muted rounded-lg px-4 py-2 max-w-[70%]">
                           <div className="flex items-center gap-2">
