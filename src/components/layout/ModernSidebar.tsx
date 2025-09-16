@@ -91,11 +91,11 @@ export function ModernSidebar({ isCollapsed, setIsCollapsed }: { isCollapsed: bo
       <div className="p-4 border-b border-slate-200/50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">SC</span>
+            <span className="text-white font-bold text-sm">FP</span>
           </div>
           {!isCollapsed && (
             <div>
-            <h1 className="font-bold text-slate-800">Sistema Construcción</h1>
+            <h1 className="font-bold text-slate-800">FieldProgress</h1>
             <p className="text-xs text-slate-500">Gestión de Proyectos</p>
             </div>
           )}
