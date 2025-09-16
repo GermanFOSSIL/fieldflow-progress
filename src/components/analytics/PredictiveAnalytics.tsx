@@ -226,7 +226,7 @@ export function PredictiveAnalytics() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{indicator.system}</CardTitle>
-                    <Badge variant={getStatusBadge(indicator.status)}>
+                    <Badge variant={getStatusBadge(indicator.status) as any}>
                       {indicator.status === 'on-track' ? 'En Ruta' :
                        indicator.status === 'warning' ? 'Advertencia' : 'Crítico'}
                     </Badge>
