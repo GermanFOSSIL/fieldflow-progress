@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TemplateEditor } from "@/components/whatsapp/TemplateEditor";
 import { TemplatePreview } from "@/components/whatsapp/TemplatePreview";
-import { ProjectSelector } from "@/components/whatsapp/ProjectSelector";
+
 import { useWhatsAppTemplates } from "@/hooks/useWhatsAppTemplates";
 import { useWhatsAppTemplateEditor } from "@/hooks/useWhatsAppTemplateEditor";
 import { 
@@ -128,11 +128,6 @@ export default function WhatsAppTemplateAdmin() {
 
   return (
     <div className="space-y-6">
-      {/* Project Selector */}
-      <div className="mb-6">
-        <ProjectSelector />
-      </div>
-      
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>

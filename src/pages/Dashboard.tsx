@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ProjectSelector } from "@/components/whatsapp/ProjectSelector";
+
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, FileText } from "lucide-react";
 
 export default function Dashboard() {
@@ -30,11 +30,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Project Selector */}
-      <div className="mb-6">
-        <ProjectSelector />
-      </div>
-      
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>

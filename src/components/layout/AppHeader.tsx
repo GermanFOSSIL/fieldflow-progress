@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { HardHat, Bell, User, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { SmartProjectSelector } from "./SmartProjectSelector";
 
 export function AppHeader() {
   const { user, signOut } = useAuth();
@@ -28,6 +29,7 @@ export function AppHeader() {
             <HardHat className="h-6 w-6 text-primary" />
             <span className="font-semibold text-foreground">FieldProgress</span>
           </div>
+          <SmartProjectSelector />
         </div>
         
         <div className="flex items-center gap-2">
