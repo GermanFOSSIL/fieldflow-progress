@@ -16,6 +16,7 @@ import ImportPlan from "./pages/ImportPlan";
 import Approve from "./pages/Approve";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
+import WhatsAppChat from "./pages/WhatsAppChat";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -106,6 +107,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AuthenticatedLayout>
                     <Analytics />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/whatsapp" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <WhatsAppChat />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 

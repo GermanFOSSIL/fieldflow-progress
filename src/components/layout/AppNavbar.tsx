@@ -11,7 +11,8 @@ import {
   FileText,
   Home,
   Bell,
-  LogOut
+  LogOut,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Importar Plan", url: "/import", icon: Upload },
   { title: "Reportes", url: "/reports", icon: FileText },
   { title: "Analítica", url: "/analytics", icon: BarChart3 },
+  { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
 ];
 
 export function AppNavbar() {
