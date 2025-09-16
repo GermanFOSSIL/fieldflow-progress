@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { SmartProjectSelector } from "./SmartProjectSelector";
 import { 
   HardHat, 
   Menu, 
@@ -86,8 +87,9 @@ export function AppNavbar() {
             ))}
           </div>
 
-          {/* Usuario y acciones */}
+          {/* Selector de proyecto y acciones */}
           <div className="flex items-center space-x-4">
+            <SmartProjectSelector />
             <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
               <Bell className="h-5 w-5" />
             </Button>
