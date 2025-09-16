@@ -1,162 +1,120 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, HardHat } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Mail, CheckCircle, AlertTriangle } from "lucide-react";
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Redirigir si ya está autenticado
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email) return;
+
     setLoading(true);
     setError("");
+    setMessage("");
 
-    try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          setError(error.message);
-        } else {
-          toast({
-            title: "Cuenta creada",
-            description: "Revisa tu email para confirmar tu cuenta",
-          });
-        }
-      } else {
-        const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate("/");
-        }
-      }
-    } catch (err) {
-      setError("Ocurrió un error inesperado");
-    } finally {
-      setLoading(false);
+    const { error } = await signIn(email);
+
+    if (error) {
+      setError("Error al iniciar sesión, inténtalo nuevamente.");
+      console.error("Sign in error:", error);
+    } else {
+      setMessage("Revisa tu correo, te enviamos un enlace de acceso.");
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-industrial-50 via-background to-industrial-100 p-4">
-      <Card className="w-full max-w-md construction-card">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-industrial-gradient p-3 rounded-lg">
-              <HardHat className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="construction-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                <Mail className="h-6 w-6 text-white" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">FieldProgress</CardTitle>
-          <CardDescription>
-            Sistema de Control de Avance de Obra
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => setIsSignUp(value === "signup")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
-            
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <TabsContent value="signup" className="space-y-4 mt-0">
-                <div>
-                  <Label htmlFor="fullName">Nombre Completo</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={isSignUp}
-                    placeholder="Ingresa tu nombre completo"
-                  />
-                </div>
-              </TabsContent>
-
-              <div>
-                <Label htmlFor="email">Email</Label>
+            <CardTitle className="text-2xl font-bold">
+              Iniciar sesión en FieldProgress
+            </CardTitle>
+            <CardDescription>
+              Ingresa tu email para recibir un enlace de acceso
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo electrónico</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@empresa.com"
                   required
-                  placeholder="ejemplo@empresa.com"
+                  disabled={loading}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Mínimo 6 caracteres"
-                  minLength={6}
-                />
-              </div>
+              {error && (
+                <Alert className="border-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-destructive">
+                    {error}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {message && (
+                <Alert className="border-chart-success">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription className="text-chart-success">
+                    {message}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <Button 
                 type="submit" 
-                className="w-full industrial-gradient"
+                className="w-full bg-primary text-white"
                 disabled={loading}
               >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSignUp ? "Crear Cuenta" : "Iniciar Sesión"}
+                {loading ? "Enviando..." : "Enviar enlace de acceso"}
               </Button>
             </form>
-          </Tabs>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Roles del sistema:</p>
-            <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-              <div className="bg-muted/50 p-2 rounded">
-                <strong>Reporter</strong><br />
-                Carga partes
-              </div>
-              <div className="bg-muted/50 p-2 rounded">
-                <strong>Supervisor</strong><br />
-                Valida/Aprueba
-              </div>
-              <div className="bg-muted/50 p-2 rounded">
-                <strong>Viewer</strong><br />
-                Solo ve
-              </div>
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+              <p>
+                Al iniciar sesión aceptas los términos de uso de FieldProgress.
+              </p>
+              <p className="mt-2">
+                ¿Primera vez? Se creará automáticamente tu cuenta como reportero.
+              </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

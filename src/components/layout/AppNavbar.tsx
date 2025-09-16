@@ -23,22 +23,20 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
 
 const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Capturar Progreso", url: "/capture", icon: Camera },
-  { title: "Aprobar Reportes", url: "/approve", icon: CheckSquare },
+  { title: "Panel", url: "/dashboard", icon: Home },
+  { title: "Cargar Avances", url: "/capture", icon: Camera },
+  { title: "Aprobaciones", url: "/approve", icon: CheckSquare },
   { title: "Importar Plan", url: "/import", icon: Upload },
   { title: "Reportes", url: "/reports", icon: FileText },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Analítica", url: "/analytics", icon: BarChart3 },
 ];
 
 export function AppNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { signOut } = useAuth();
-  const { profile } = useProfile();
+  const { signOut, userProfile, user } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,7 +56,7 @@ export function AppNavbar() {
           {/* Logo y nombre */}
           <div className="flex items-center">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="bg-industrial-gradient p-2 rounded-lg">
+              <div className="bg-primary p-2 rounded-lg">
                 <HardHat className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold text-sidebar-foreground">FieldProgress</span>
@@ -94,16 +92,18 @@ export function AppNavbar() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(profile?.full_name)}
+                      {getInitials(userProfile?.full_name || user?.email)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{profile?.full_name || "Usuario"}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {userProfile?.full_name || user?.email || "Usuario"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    Rol: {profile?.role || "reporter"}
+                    Rol: {userProfile?.role || "reporter"}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
