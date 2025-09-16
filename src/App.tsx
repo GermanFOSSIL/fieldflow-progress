@@ -9,7 +9,7 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AuthenticatedLayout } from "@/components/layout/AuthenticatedLayout";
 
 // Pages
-import Index from "./pages/Index";
+import Welcome from "./pages/Welcome";
 import Dashboard from "./pages/Dashboard";
 import ProgressCapture from "./pages/ProgressCapture";
 import ImportPlan from "./pages/ImportPlan";
@@ -34,13 +34,20 @@ const App = () => (
               path="/" 
               element={
                 <PublicLayout>
-                  <Index />
+                  <Welcome />
                 </PublicLayout>
               } 
             />
             
             {/* Autenticación */}
-            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/auth" 
+              element={
+                <PublicLayout>
+                  <Auth />
+                </PublicLayout>
+              } 
+            />
             
             {/* Rutas protegidas con nueva navegación */}
             <Route 
