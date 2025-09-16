@@ -32,12 +32,12 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Project Dashboard</h1>
-          <p className="text-muted-foreground">FieldProgress Demo - Construction Progress Overview</p>
+          <h1 className="text-3xl font-bold">Panel del Proyecto</h1>
+          <p className="text-muted-foreground">FieldProgress Demo - Resumen de Progreso de Construcción</p>
         </div>
-        <Button variant="default" className="industrial-gradient">
+        <Button variant="default" className="bg-primary text-white">
           <FileText className="mr-2 h-4 w-4" />
-          Generate Report
+          Generar Reporte
         </Button>
       </div>
 
@@ -45,53 +45,53 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="construction-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">Progreso General</CardTitle>
             <TrendingUp className="h-4 w-4 text-chart-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectSummary.totalProgress}%</div>
             <Progress value={projectSummary.totalProgress} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              Plan: {projectSummary.plannedProgress}% ({projectSummary.plannedProgress - projectSummary.totalProgress}% variance)
+              Plan: {projectSummary.plannedProgress}% ({projectSummary.plannedProgress - projectSummary.totalProgress}% varianza)
             </p>
           </CardContent>
         </Card>
 
         <Card className="construction-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Activities</CardTitle>
+            <CardTitle className="text-sm font-medium">Actividades Activas</CardTitle>
             <Clock className="h-4 w-4 text-chart-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectSummary.activeActivities}</div>
             <p className="text-xs text-muted-foreground">
-              {projectSummary.completedActivities} completed
+              {projectSummary.completedActivities} completadas
             </p>
           </CardContent>
         </Card>
 
         <Card className="construction-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+            <CardTitle className="text-sm font-medium">Pendientes de Aprobación</CardTitle>
             <AlertTriangle className="h-4 w-4 text-chart-warning" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectSummary.pendingApprovals}</div>
             <p className="text-xs text-muted-foreground">
-              Requires supervisor review
+              Requiere revisión del supervisor
             </p>
           </CardContent>
         </Card>
 
         <Card className="construction-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quality Score</CardTitle>
+            <CardTitle className="text-sm font-medium">Puntuación de Calidad</CardTitle>
             <CheckCircle className="h-4 w-4 text-chart-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">94%</div>
             <p className="text-xs text-muted-foreground">
-              Approval rate this week
+              Tasa de aprobación esta semana
             </p>
           </CardContent>
         </Card>
@@ -101,8 +101,8 @@ export default function Dashboard() {
         {/* System Progress */}
         <Card className="construction-card">
           <CardHeader>
-            <CardTitle>Progress by System</CardTitle>
-            <CardDescription>Current completion status by construction system</CardDescription>
+            <CardTitle>Progreso por Sistema</CardTitle>
+            <CardDescription>Estado actual de finalización por sistema de construcción</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {systemProgress.map((system) => (
@@ -118,8 +118,8 @@ export default function Dashboard() {
                       }
                       className="text-xs"
                     >
-                      {system.status === "ahead" ? "Ahead" :
-                       system.status === "delayed" ? "Delayed" : "On Track"}
+                      {system.status === "ahead" ? "Adelantado" :
+                       system.status === "delayed" ? "Atrasado" : "En Tiempo"}
                     </Badge>
                   </div>
                 </div>
@@ -134,9 +134,9 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="h-5 w-5 text-destructive" />
-              Top Delays
+              Top Atrasos
             </CardTitle>
-            <CardDescription>Activities with highest variance from plan</CardDescription>
+            <CardDescription>Actividades con mayor varianza del plan</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -145,7 +145,7 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{delay.activity}</p>
                     <p className="text-xs text-muted-foreground">
-                      Behind schedule
+                      Fuera de cronograma
                     </p>
                   </div>
                   <Badge variant="destructive" className="font-mono">
@@ -161,14 +161,14 @@ export default function Dashboard() {
       {/* S-Curve Placeholder */}
       <Card className="construction-card">
         <CardHeader>
-          <CardTitle>S-Curve: Plan vs Actual</CardTitle>
-          <CardDescription>Cumulative progress comparison over time</CardDescription>
+          <CardTitle>Curva S: Plan vs Real</CardTitle>
+          <CardDescription>Comparación de progreso acumulativo a lo largo del tiempo</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-center justify-center border-2 border-dashed border-border rounded-lg">
             <div className="text-center">
-              <p className="text-lg font-medium text-muted-foreground">S-Curve Chart</p>
-              <p className="text-sm text-muted-foreground">Will be connected to Supabase data</p>
+              <p className="text-lg font-medium text-muted-foreground">Gráfico Curva S</p>
+              <p className="text-sm text-muted-foreground">Se conectará con datos de Supabase</p>
             </div>
           </div>
         </CardContent>

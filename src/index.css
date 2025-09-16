@@ -137,17 +137,7 @@
     box-shadow: var(--shadow-card);
   }
 
-  .industrial-gradient {
-    background: var(--gradient-primary);
-  }
-
-  .orange-gradient {
-    background: var(--gradient-orange);
-  }
-
-  .steel-gradient {
-    background: var(--gradient-steel);
-  }
+  /* Removed gradients for clean, modern design */
 }
 
 @layer components {

@@ -64,26 +64,26 @@ export default function ProgressCapture() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Daily Progress Entry</h1>
-          <p className="text-muted-foreground">Record today's construction progress</p>
+          <h1 className="text-3xl font-bold">Carga Diaria de Avances</h1>
+          <p className="text-muted-foreground">Registrar el progreso de construcción de hoy</p>
         </div>
         <Badge variant="secondary" className="text-sm">
-          Mobile Optimized
+          Optimizado para Móvil
         </Badge>
       </div>
 
       {/* Project Selection */}
       <Card className="construction-card">
         <CardHeader>
-          <CardTitle className="text-lg">Report Details</CardTitle>
+          <CardTitle className="text-lg">Detalles del Parte</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="project">Project</Label>
+              <Label htmlFor="project">Proyecto</Label>
               <Select value={selectedProject} onValueChange={setSelectedProject}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue placeholder="Seleccionar proyecto" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="FP01">FieldProgress Demo</SelectItem>
@@ -91,7 +91,7 @@ export default function ProgressCapture() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">Fecha</Label>
               <Input 
                 type="date" 
                 value={selectedDate}
@@ -99,14 +99,14 @@ export default function ProgressCapture() {
               />
             </div>
             <div>
-              <Label htmlFor="shift">Shift</Label>
+              <Label htmlFor="shift">Turno</Label>
               <Select value={selectedShift} onValueChange={setSelectedShift}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select shift" />
+                  <SelectValue placeholder="Seleccionar turno" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="DIA">Day Shift</SelectItem>
-                  <SelectItem value="NOCHE">Night Shift</SelectItem>
+                  <SelectItem value="DIA">Día</SelectItem>
+                  <SelectItem value="NOCHE">Noche</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -122,14 +122,14 @@ export default function ProgressCapture() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search by activity code or name..."
+                  placeholder="Buscar por código o nombre de actividad..."
                   className="pl-10"
                 />
               </div>
             </div>
             <Button variant="outline">
               <Plus className="mr-2 h-4 w-4" />
-              Add Activity
+              Agregar Actividad
             </Button>
           </div>
         </CardContent>
@@ -138,23 +138,23 @@ export default function ProgressCapture() {
       {/* Progress Entry Table */}
       <Card className="construction-card">
         <CardHeader>
-          <CardTitle>Today's Progress</CardTitle>
-          <CardDescription>Enter quantities completed today for each activity</CardDescription>
+          <CardTitle>Progreso de Hoy</CardTitle>
+          <CardDescription>Ingresar cantidades completadas hoy para cada actividad</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Activity Code</TableHead>
-                  <TableHead>Activity Name</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>BOQ Qty</TableHead>
-                  <TableHead>Executed</TableHead>
-                  <TableHead>Today</TableHead>
-                  <TableHead>Progress %</TableHead>
-                  <TableHead>Comment</TableHead>
-                  <TableHead>Photos</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Actividad</TableHead>
+                  <TableHead>Unidad</TableHead>
+                  <TableHead>Cant. BOQ</TableHead>
+                  <TableHead>Ejecutado</TableHead>
+                  <TableHead>Hoy</TableHead>
+                  <TableHead>Progreso %</TableHead>
+                  <TableHead>Comentario</TableHead>
+                  <TableHead>Fotos</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -185,14 +185,14 @@ export default function ProgressCapture() {
                       <Textarea
                         value={entry.comment}
                         onChange={(e) => updateEntry(entry.id, 'comment', e.target.value)}
-                        placeholder="Comments..."
+                        placeholder="Comentarios..."
                         className="min-w-[200px] min-h-[60px]"
                       />
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">
                         <Camera className="h-4 w-4 mr-2" />
-                        Add ({entry.photos.length})
+                        Agregar ({entry.photos.length})
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -207,11 +207,11 @@ export default function ProgressCapture() {
       <div className="flex justify-end gap-4">
         <Button variant="outline">
           <Save className="mr-2 h-4 w-4" />
-          Save Draft
+          Guardar Borrador
         </Button>
-        <Button variant="default" className="industrial-gradient">
+        <Button variant="default" className="bg-primary text-white">
           <Send className="mr-2 h-4 w-4" />
-          Submit for Approval
+          Enviar para Aprobación
         </Button>
       </div>
     </div>

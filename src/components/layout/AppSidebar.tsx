@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Progress Entry", url: "/capture", icon: HardHat },
-  { title: "Approval", url: "/approve", icon: CheckSquare },
-  { title: "Import Plan", url: "/import", icon: Upload },
-  { title: "Reports", url: "/reports", icon: FileText },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Panel", url: "/dashboard", icon: Home },
+  { title: "Cargar Avances", url: "/capture", icon: HardHat },
+  { title: "Aprobaciones", url: "/approve", icon: CheckSquare },
+  { title: "Importar Plan", url: "/import", icon: Upload },
+  { title: "Reportes", url: "/reports", icon: FileText },
+  { title: "Analítica", url: "/analytics", icon: BarChart3 },
 ];
 
 export function AppSidebar() {

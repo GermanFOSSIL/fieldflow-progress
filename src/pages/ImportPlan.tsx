@@ -66,12 +66,12 @@ export default function ImportPlan() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Import Project Plan</h1>
-          <p className="text-muted-foreground">Upload CSV/Excel files to create project structure and activities</p>
+          <h1 className="text-3xl font-bold">Importar Plan del Proyecto</h1>
+          <p className="text-muted-foreground">Subir archivos CSV/Excel para crear estructura del proyecto y actividades</p>
         </div>
         <Button variant="outline">
           <Download className="mr-2 h-4 w-4" />
-          Download Templates
+          Descargar Plantillas
         </Button>
       </div>
 
@@ -98,24 +98,24 @@ export default function ImportPlan() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Step 1: Select File
+              Paso 1: Seleccionar Archivo
             </CardTitle>
             <CardDescription>
-              Upload your project plan in CSV or Excel format
+              Subir tu plan de proyecto en formato CSV o Excel
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <div className="space-y-2">
-                <p className="text-lg font-medium">Drop your file here</p>
+                <p className="text-lg font-medium">Arrastra tu archivo aquí</p>
                 <p className="text-sm text-muted-foreground">
-                  Supports CSV and Excel files up to 10MB
+                  Soporta archivos CSV y Excel hasta 10MB
                 </p>
                 <div className="pt-4">
                   <Label htmlFor="file-upload">
-                    <Button variant="default" className="industrial-gradient cursor-pointer">
-                      Choose File
+                    <Button variant="default" className="bg-primary text-white cursor-pointer">
+                      Elegir Archivo
                     </Button>
                     <Input
                       id="file-upload"
@@ -132,7 +132,7 @@ export default function ImportPlan() {
             <Alert className="mt-6">
               <FileText className="h-4 w-4" />
               <AlertDescription>
-                Make sure your file includes columns: project_code, area_name, system_name, activity_code, activity_name, unit, boq_qty, weight
+                Asegúrate de que tu archivo incluya las columnas: project_code, area_name, system_name, activity_code, activity_name, unit, boq_qty, weight
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -144,28 +144,28 @@ export default function ImportPlan() {
         <div className="space-y-6">
           <Card className="construction-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Step 2: Preview and Validate
-              </CardTitle>
-              <CardDescription>
-                Review the imported data before processing
-              </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Paso 2: Previsualizar y Validar
+            </CardTitle>
+            <CardDescription>
+              Revisar los datos importados antes de procesarlos
+            </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="font-medium">File: {selectedFile?.name}</p>
+                  <p className="font-medium">Archivo: {selectedFile?.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {previewData.length} activities found
+                    {previewData.length} actividades encontradas
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="default">
-                    {previewData.filter(item => item.status === 'valid').length} Valid
+                    {previewData.filter(item => item.status === 'valid').length} Válidos
                   </Badge>
                   <Badge variant="secondary">
-                    {previewData.filter(item => item.status === 'warning').length} Warnings
+                    {previewData.filter(item => item.status === 'warning').length} Advertencias
                   </Badge>
                 </div>
               </div>
@@ -174,15 +174,15 @@ export default function ImportPlan() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead>Area</TableHead>
-                      <TableHead>System</TableHead>
-                      <TableHead>Activity Code</TableHead>
-                      <TableHead>Activity Name</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>BOQ Qty</TableHead>
-                      <TableHead>Weight</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Proyecto</TableHead>
+                      <TableHead>Área</TableHead>
+                      <TableHead>Sistema</TableHead>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Actividad</TableHead>
+                      <TableHead>Unidad</TableHead>
+                      <TableHead>Cant. BOQ</TableHead>
+                      <TableHead>Peso</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -211,10 +211,10 @@ export default function ImportPlan() {
 
               <div className="flex justify-end gap-4 mt-6">
                 <Button variant="outline" onClick={() => setUploadStep(1)}>
-                  Back
+                  Atrás
                 </Button>
-                <Button variant="default" className="industrial-gradient" onClick={handleImport}>
-                  Import Data
+                <Button variant="default" className="bg-primary text-white" onClick={handleImport}>
+                  Importar Datos
                 </Button>
               </div>
             </CardContent>
@@ -228,25 +228,25 @@ export default function ImportPlan() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-chart-success">
               <CheckCircle className="h-5 w-5" />
-              Import Complete
+              Importación Completa
             </CardTitle>
             <CardDescription>
-              Your project plan has been successfully imported
+              Tu plan del proyecto ha sido importado exitosamente
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               <CheckCircle className="mx-auto h-16 w-16 text-chart-success mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Successfully Imported</h3>
+              <h3 className="text-lg font-semibold mb-2">Importado Exitosamente</h3>
               <p className="text-muted-foreground mb-6">
-                {previewData.length} activities have been added to your project
+                {previewData.length} actividades han sido agregadas a tu proyecto
               </p>
               <div className="flex justify-center gap-4">
                 <Button variant="outline" onClick={() => setUploadStep(1)}>
-                  Import Another File
+                  Importar Otro Archivo
                 </Button>
-                <Button variant="default" className="industrial-gradient">
-                  View Dashboard
+                <Button variant="default" className="bg-primary text-white">
+                  Ver Panel
                 </Button>
               </div>
             </div>

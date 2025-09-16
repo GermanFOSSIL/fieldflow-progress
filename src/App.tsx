@@ -13,6 +13,9 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ProgressCapture from "./pages/ProgressCapture";
 import ImportPlan from "./pages/ImportPlan";
+import Approve from "./pages/Approve";
+import Reports from "./pages/Reports";
+import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -65,7 +68,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <Dashboard />
+                    <Approve />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
@@ -85,7 +88,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <Dashboard />
+                    <Reports />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
@@ -95,7 +98,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <Dashboard />
+                    <Analytics />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
