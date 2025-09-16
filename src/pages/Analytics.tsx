@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, TrendingUp, TrendingDown, Calendar, Target, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function Analytics() {
   const [selectedPeriod, setSelectedPeriod] = useState("30");
@@ -202,47 +212,60 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Weekly Progress Chart */}
+        {/* S-Curve Chart */}
         <Card className="construction-card">
           <CardHeader>
-            <CardTitle>Curva S - Progreso Semanal</CardTitle>
-            <CardDescription>Comparación entre progreso planificado y real</CardDescription>
+            <CardTitle>Curva S: Plan vs Real</CardTitle>
+            <CardDescription>Comparación de progreso acumulativo a lo largo del tiempo</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {weeklyProgress.map((week, index) => (
-                <div key={week.week} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{week.week}</span>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-chart-primary">Plan: {week.planned}%</span>
-                      <span className="text-chart-secondary">Real: {week.actual}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-chart-primary rounded-full"></div>
-                      <div className="flex-1 bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-chart-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${week.planned}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-chart-secondary rounded-full"></div>
-                      <div className="flex-1 bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-chart-secondary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${week.actual}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyProgress}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip 
+                    formatter={(value, name) => [`${value}%`, name === 'planned' ? 'Planificado' : 'Real']}
+                    labelFormatter={(label) => `Semana: ${label}`}
+                  />
+                  <Legend 
+                    formatter={(value) => value === 'planned' ? 'Planificado' : 'Real'}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="planned" 
+                    stroke="hsl(var(--chart-1))" 
+                    strokeWidth={3}
+                    strokeDasharray="5 5"
+                    name="planned"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="actual" 
+                    stroke="hsl(var(--chart-2))" 
+                    strokeWidth={3}
+                    name="actual"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-medium mb-2">Datos del Proyecto</h4>
+                  <p><strong>Proyecto:</strong> Planta de Procesamiento de Gas San Martín</p>
+                  <p><strong>Fecha inicio:</strong> 02/01/2024</p>
+                  <p><strong>Progreso actual:</strong> {weeklyProgress[weeklyProgress.length - 1].actual}%</p>
                 </div>
-              ))}
+                <div>
+                  <h4 className="font-medium mb-2">Estado Actual</h4>
+                  <p><strong>Desfase:</strong> {(weeklyProgress[weeklyProgress.length - 1].planned - weeklyProgress[weeklyProgress.length - 1].actual).toFixed(1)}%</p>
+                  <p><strong>Tendencia:</strong> {weeklyProgress[weeklyProgress.length - 1].actual > weeklyProgress[weeklyProgress.length - 2].actual ? 'Mejorando' : 'Estable'}</p>
+                  <p><strong>Proyección:</strong> En seguimiento</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

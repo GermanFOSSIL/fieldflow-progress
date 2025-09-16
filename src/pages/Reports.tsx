@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Calendar, TrendingUp, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Reports() {
   const { toast } = useToast();
@@ -68,36 +69,32 @@ export default function Reports() {
         ]
       };
 
-      const response = await fetch(`https://zsvfxfnpjwuzsynsgtym.supabase.co/functions/v1/generate-pdf-report`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzdmZ4Zm5wand1enN5bnNndHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzgyNzUsImV4cCI6MjA3MzU1NDI3NX0.2MUDcsuRI_xZH2hd9inGYFWKfmtlpfdXkE8csFtN3L8'}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('generate-pdf-report', {
+        body: {
           reportData,
           reportType: reportType || 'daily'
-        })
+        }
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `diario_obra_${reportData.date}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        toast({
-          title: "Reporte Generado",
-          description: "El Diario de Obra ha sido generado y descargado exitosamente.",
-        });
-      } else {
-        throw new Error('Error al generar PDF');
+      if (error) {
+        throw error;
       }
+
+      // Create blob from returned data
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diario_obra_${reportData.date}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Reporte Generado",
+        description: "El Diario de Obra ha sido generado y descargado exitosamente.",
+      });
     } catch (error) {
       console.error('Error:', error);
       toast({
