@@ -79,43 +79,88 @@ export default function WhatsAppBusiness() {
   const [newMessage, setNewMessage] = useState('');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [customTemplateData, setCustomTemplateData] = useState<any>({});
+
+  const mockMessages: Message[] = [
+    {
+      id: "1",
+      sender: "Juan Pérez",
+      text: "Buenos días, reporte de avance del día:",
+      timestamp: "2024-03-15 08:30",
+      type: 'text',
+      status: 'read'
+    },
+    {
+      id: "2", 
+      sender: "Juan Pérez",
+      text: "Actividad: Construcción muro norte - Avance: 75% - Ubicación: Sector A",
+      timestamp: "2024-03-15 08:32",
+      type: 'report',
+      status: 'read',
+      reportData: {
+        activity: "Construcción muro norte",
+        progress: 75,
+        location: "Sector A"
+      }
+    },
+    {
+      id: "3",
+      sender: "system",
+      text: "Perfecto Juan! Tu reporte ha sido registrado. ¿Necesitas algún material adicional?",
+      timestamp: "2024-03-15 08:35",
+      type: 'text',
+      status: 'delivered'
+    }
+  ];
+
+  // Initialize messages with mock data if empty
+  if (messages.length === 0) {
+    setMessages(mockMessages);
+  }
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedContact) return;
 
     const message: Message = {
       id: Date.now().toString(),
-      sender: 'supervisor',
+      sender: "system",
       text: newMessage,
-      timestamp: new Date().toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
+      timestamp: new Date().toLocaleTimeString(),
       type: 'text',
       status: 'sent'
     };
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
-
     try {
-      saveMessage({
-        conversationId: selectedContact.id,
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
+      
+      // Save to database
+      await saveMessage({
+        conversationId: selectedContact.conversation_id || `conv_${selectedContact.id}`,
         senderType: 'bot',
         messageText: newMessage,
         messageType: 'text'
       });
+      
+      toast({
+        title: "Mensaje enviado",
+        description: `Mensaje enviado a ${selectedContact.name}`,
+      });
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje",
+        variant: "destructive"
+      });
     }
   };
 
   const handleSendTemplate = async (templateId: string, customData?: any) => {
-    if (!selectedContacts.length && !selectedContact) {
+    if (!selectedContact && selectedContacts.length === 0) {
       toast({
         title: "Error",
-        description: "Selecciona al menos un contacto para enviar el template",
+        description: "Debes seleccionar al menos un contacto",
         variant: "destructive"
       });
       return;
@@ -124,359 +169,645 @@ export default function WhatsAppBusiness() {
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
 
-    const recipients = selectedContacts.length > 0 ? selectedContacts : [selectedContact.id];
-    let templateMessage = "";
+    const recipients = selectedContact ? [selectedContact] : 
+      contacts.filter(c => selectedContacts.includes(c.id));
 
-    // Generate template content based on type
-    if (template.template_type === 'menu') {
-      templateMessage = generateMenuResponse(template);
-    } else if (template.template_type === 'progress_form') {
-      templateMessage = generateFormResponse(template);
-    } else {
-      templateMessage = template.content.title || "Template message";
-    }
-
-    try {
-      for (const contactId of recipients) {
-        const contact = contacts.find(c => c.id === contactId);
-        if (contact) {
-          // Create conversation if doesn't exist and save message
-          saveMessage({
-            conversationId: contactId,
-            senderType: 'bot',
-            messageText: templateMessage,
-            messageType: 'template',
-            templateData: { template_id: templateId, template_name: template.name }
-          });
-        }
+    for (const contact of recipients) {
+      let messageText = "";
+      
+      switch (template.template_type) {
+        case 'menu':
+          messageText = generateMenuResponse(template);
+          break;
+        case 'progress_form':
+          messageText = generateFormResponse(template);
+          break;
+        default:
+          messageText = template.content?.title || `Plantilla: ${template.name}`;
       }
 
-      toast({
-        title: "Template enviado",
-        description: `Template "${template.name}" enviado a ${recipients.length} contacto(s)`,
-      });
+      const message: Message = {
+        id: Date.now().toString() + contact.id,
+        sender: "system",
+        text: messageText,
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'template',
+        status: 'sent',
+        templateData: {
+          templateName: template.name,
+          templateType: template.template_type
+        }
+      };
 
-      setIsTemplateDialogOpen(false);
-      setSelectedContacts([]);
-    } catch (error) {
-      console.error('Error sending template:', error);
-      toast({
-        title: "Error",
-        description: "Error al enviar el template",
-        variant: "destructive"
-      });
+      try {
+        if (selectedContact && selectedContact.id === contact.id) {
+          setMessages(prev => [...prev, message]);
+        }
+
+        await saveMessage({
+          conversationId: contact.conversation_id || `conv_${contact.id}`,
+          senderType: 'bot',
+          messageText: messageText,
+          messageType: 'template'
+        });
+      } catch (error) {
+        console.error('Error sending template:', error);
+      }
     }
-  };
 
-  const createNewConversation = async (contactId: string) => {
-    const contact = contacts.find(c => c.id === contactId);
-    if (!contact) return null;
+    toast({
+      title: "Plantillas enviadas",
+      description: `Plantilla "${template.name}" enviada a ${recipients.length} contacto(s)`,
+    });
 
-    try {
-      createConversation({
-        contactId: contactId,
-        projectId: selectedProject?.id || '',
-        title: `Chat con ${contact.name}`
-      });
-      return contactId; // Return contactId as conversation identifier
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      return null;
-    }
+    setIsTemplateDialogOpen(false);
+    setSelectedTemplate(null);
+    setCustomTemplateData({});
   };
 
   const loadMessages = async (conversationId: string) => {
-    if (!conversationId) return;
-    
-    setIsLoadingMessages(true);
     try {
       const msgs = await fetchMessages(conversationId);
       const formattedMessages: Message[] = msgs.map(msg => ({
         id: msg.id,
-        sender: msg.sender_type === 'bot' ? 'supervisor' : 'contact',
-        text: msg.message_text,
-        timestamp: new Date(msg.created_at).toLocaleTimeString('es-ES', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        type: msg.message_type as any || 'text',
-        status: 'delivered',
-        templateData: msg.template_data ? {
-          templateName: msg.template_data.template_name,
-          templateType: msg.template_data.template_type
-        } : undefined
+        sender: msg.sender_type === 'user' ? 'user' : 'system',
+        text: msg.message_text || '',
+        timestamp: new Date(msg.created_at).toLocaleTimeString(),
+        type: (msg.message_type as any) || 'text',
+        status: 'delivered'
       }));
-      setMessages(formattedMessages);
+      setMessages(formattedMessages.length > 0 ? formattedMessages : mockMessages);
     } catch (error) {
       console.error('Error loading messages:', error);
-    } finally {
-      setIsLoadingMessages(false);
+      setMessages(mockMessages);
     }
   };
 
   const handleContactSelect = (contact: any) => {
     setSelectedContact(contact);
-    if (contact.id) {
-      loadMessages(contact.id);
+    if (contact.conversation_id) {
+      loadMessages(contact.conversation_id);
     } else {
-      setMessages([]);
+      setMessages(mockMessages);
     }
   };
 
   const handleContactCheckbox = (contactId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedContacts(prev => [...prev, contactId]);
-    } else {
-      setSelectedContacts(prev => prev.filter(id => id !== contactId));
-    }
+    setSelectedContacts(prev => {
+      if (checked) {
+        return [...prev, contactId];
+      } else {
+        return prev.filter(id => id !== contactId);
+      }
+    });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <CheckCircle2 className="h-3 w-3 text-muted-foreground" />;
-      case 'delivered':
-        return <CheckCircle2 className="h-3 w-3 text-blue-500" />;
-      case 'read':
-        return <CheckCircle2 className="h-3 w-3 text-green-500" />;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="h-[calc(100vh-8rem)]">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h1 className="text-2xl font-bold">WhatsApp Business</h1>
-            <p className="text-muted-foreground">
-              Proyecto: {selectedProject?.name || 'Ninguno seleccionado'}
-            </p>
-          </div>
-          <TabsList className="grid w-auto grid-cols-3">
-            <TabsTrigger value="conversations" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Conversaciones
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <FileCode className="h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="contacts" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Contactos
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="conversations" className="h-full m-0">
-            <div className="h-full flex">
-              {/* Contacts Sidebar */}
-              <div className="w-1/3 border-r bg-muted/30">
-                <div className="p-4 border-b bg-background">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Conversaciones</h3>
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nueva
-                    </Button>
+  const MessageBubble = ({ message }: { message: Message }) => {
+    const isSystem = message.sender === 'system';
+    
+    return (
+      <div className={`flex ${isSystem ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`max-w-[70%] ${isSystem ? 'order-1' : 'order-2'}`}>
+          <div
+            className={`
+              px-4 py-3 rounded-2xl shadow-sm
+              ${isSystem 
+                ? 'bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white ml-4' 
+                : 'bg-card border border-border text-foreground mr-4'
+              }
+            `}
+          >
+            {message.type === 'report' && message.reportData ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{message.text}</p>
+                <div className="bg-white/20 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-sm">{message.reportData.activity}</span>
                   </div>
-                  <div className="flex gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{contacts?.length || 0} contactos</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{conversations?.length || 0} conversaciones</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-sm">{message.reportData.progress}% completado</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">{message.reportData.location}</span>
                   </div>
                 </div>
+              </div>
+            ) : message.type === 'template' && message.templateData ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <MessageCircleCode className="w-4 h-4" />
+                  <span className="text-xs font-medium opacity-75">
+                    Plantilla: {message.templateData.templateName}
+                  </span>
+                </div>
+                <p className="text-sm">{message.text}</p>
+              </div>
+            ) : (
+              <p className="text-sm">{message.text}</p>
+            )}
+          </div>
+          
+          <div className={`flex items-center gap-2 mt-1 px-2 ${isSystem ? 'justify-end' : 'justify-start'}`}>
+            <span className="text-xs text-muted-foreground">{message.timestamp}</span>
+            {isSystem && (
+              <div className="flex items-center gap-1">
+                {message.status === 'sent' && <CheckCircle2 className="w-3 h-3 text-muted-foreground" />}
+                {message.status === 'delivered' && <CheckCircle2 className="w-3 h-3 text-[#25D366]" />}
+                {message.status === 'read' && <CheckCircle2 className="w-3 h-3 text-blue-500" />}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {!isSystem && (
+          <Avatar className="w-8 h-8 order-1">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
+              {message.sender.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </div>
+    );
+  };
 
-                <ScrollArea className="h-[calc(100%-120px)]">
-                  <div className="p-2 space-y-1">
-                    {contactsLoading ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        Cargando contactos...
-                      </div>
-                    ) : contacts?.map((contact) => (
-                      <div
-                        key={contact.id}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedContact?.id === contact.id
-                            ? 'bg-primary/10 border border-primary/20'
-                            : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => handleContactSelect(contact)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-industrial-gradient text-white text-sm">
-                              {contact.name.split(' ').map((n: string) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-grow min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="font-medium text-sm truncate">{contact.name}</p>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date().toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-1">{contact.role}</p>
-                            <p className="text-sm truncate">{contact.phone}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+  const TemplateSelectionDialog = () => (
+    <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageCircleCode className="w-5 h-5" />
+            Seleccionar Plantilla
+          </DialogTitle>
+          <DialogDescription>
+            Elige una plantilla para enviar a los contactos seleccionados
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-auto">
+          {templates.map((template) => (
+            <Card 
+              key={template.id} 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+                selectedTemplate?.id === template.id 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border hover:border-primary/50'
+              }`}
+              onClick={() => setSelectedTemplate(template)}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">{template.name}</h4>
+                  <Badge variant="outline" className="text-xs">
+                    {template.template_type}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-3">
+                  {template.content?.title || 'Sin descripción'}
+                </p>
+              </div>
+            </Card>
+          ))}
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setIsTemplateDialogOpen(false);
+              setSelectedTemplate(null);
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => selectedTemplate && handleSendTemplate(selectedTemplate.id)}
+            disabled={!selectedTemplate}
+            className="bg-[#25D366] hover:bg-[#128C7E] text-white"
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Enviar Plantilla
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const ContactsTab = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-semibold text-foreground">Gestión de Contactos</h3>
+          {selectedContacts.length > 0 && (
+            <Badge variant="secondary" className="bg-[#25D366]/10 text-[#25D366]">
+              {selectedContacts.length} seleccionados
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          {selectedContacts.length > 0 && (
+            <Button 
+              onClick={() => setIsTemplateDialogOpen(true)}
+              className="bg-[#25D366] hover:bg-[#128C7E] text-white"
+            >
+              <MessageCircleCode className="w-4 h-4 mr-2" />
+              Enviar Plantilla
+            </Button>
+          )}
+          <Button variant="outline" size="sm">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Nuevo Contacto
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {contacts.map((contact) => (
+          <Card key={contact.id} className="p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={selectedContacts.includes(contact.id)}
+                  onCheckedChange={(checked) => 
+                    handleContactCheckbox(contact.id, checked as boolean)
+                  }
+                />
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                    {contact.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-foreground truncate">
+                  {contact.name || 'Sin nombre'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {contact.phone || 'Sin teléfono'}
+                </p>
+                <div className="flex items-center space-x-2 mt-1">
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      contact.role === 'supervisor' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      contact.role === 'worker' ? 'bg-green-50 text-green-700 border-green-200' :
+                      'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    {contact.role || 'Sin rol'}
+                  </Badge>
+                <div className={`w-2 h-2 rounded-full ${
+                  contact.is_active ? 'bg-[#25D366]' : 'bg-gray-400'
+                }`} />
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      
+      {contacts.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-muted-foreground mb-2">No hay contactos</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Agrega contactos para comenzar a enviar mensajes
+          </p>
+          <Button>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Agregar Primer Contacto
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const TemplatesTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-foreground">Plantillas WhatsApp</h3>
+          <p className="text-sm text-muted-foreground">
+            Administra y utiliza plantillas predefinidas para comunicación
+          </p>
+        </div>
+        <Button asChild>
+          <a href="/whatsapp-templates">
+            <Settings className="w-4 h-4 mr-2" />
+            Administrar Plantillas
+          </a>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {templates.map((template) => (
+          <Card key={template.id} className="p-4 hover:shadow-md transition-all">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-foreground">{template.name}</h4>
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${
+                    template.template_type === 'menu' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    template.template_type === 'progress_form' ? 'bg-green-50 text-green-700 border-green-200' :
+                    'bg-purple-50 text-purple-700 border-purple-200'
+                  }`}
+                >
+                  {template.template_type}
+                </Badge>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                {template.content?.title || 'Sin descripción disponible'}
+              </p>
+              
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedTemplate(template);
+                    // Show preview or detailed view
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Vista previa
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white"
+                  onClick={() => {
+                    setSelectedTemplate(template);
+                    setIsTemplateDialogOpen(true);
+                  }}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Usar
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {templates.length === 0 && (
+        <div className="text-center py-12">
+          <MessageCircleCode className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-muted-foreground mb-2">No hay plantillas</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Crea plantillas para agilizar la comunicación con tu equipo
+          </p>
+          <Button asChild>
+            <a href="/whatsapp-templates">
+              <Plus className="w-4 h-4 mr-2" />
+              Crear Primera Plantilla
+            </a>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header mejorado con estadísticas */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-xl flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-white" />
+              </div>
+              WhatsApp Business
+            </h1>
+            <p className="text-muted-foreground">
+              Gestiona las comunicaciones con tu equipo de trabajo
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="bg-[#25D366]/10 text-[#25D366] border-[#25D366]/20 px-3 py-1">
+              <div className="w-2 h-2 bg-[#25D366] rounded-full mr-2 animate-pulse"></div>
+              Conectado
+            </Badge>
+          </div>
+        </div>
+
+        {/* Cards de estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="p-4 bg-gradient-to-br from-[#25D366]/5 to-[#25D366]/10 border-[#25D366]/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#25D366]/20 rounded-lg flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-[#25D366]" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{messages.length}</p>
+                <p className="text-xs text-muted-foreground">Mensajes Enviados</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 border-blue-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{contacts.length}</p>
+                <p className="text-xs text-muted-foreground">Contactos Activos</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">98%</p>
+                <p className="text-xs text-muted-foreground">Tasa de Entrega</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border-purple-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <FileCode className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{templates.length}</p>
+                <p className="text-xs text-muted-foreground">Plantillas Disponibles</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tabs mejoradas */}
+      <Card className="bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 h-12">
+            <TabsTrigger value="conversations" className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <MessageSquare className="w-4 h-4" />
+              <span className="font-medium">Conversaciones</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <MessageCircleCode className="w-4 h-4" />
+              <span className="font-medium">Plantillas</span>
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center space-x-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Users className="w-4 h-4" />
+              <span className="font-medium">Contactos</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="conversations" className="mt-6 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+              {/* Lista de contactos */}
+              <div className="lg:col-span-1">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-foreground">Contactos</h3>
+                    <Badge variant="outline">
+                      {contacts.length} contactos
+                    </Badge>
                   </div>
-                </ScrollArea>
+                  
+                  <ScrollArea className="h-[500px]">
+                    <div className="space-y-2">
+                      {contacts.map((contact) => (
+                        <Card
+                          key={contact.id}
+                          className={`p-3 cursor-pointer transition-all hover:shadow-sm ${
+                            selectedContact?.id === contact.id 
+                              ? 'bg-[#25D366]/10 border-[#25D366]/30' 
+                              : 'bg-card hover:bg-accent/50'
+                          }`}
+                          onClick={() => handleContactSelect(contact)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                                {contact.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                              </AvatarFallback>
+                            </Avatar>
+                            
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-foreground truncate">
+                                {contact.name || 'Sin nombre'}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {contact.role || 'Sin rol'}
+                              </p>
+                              <div className="flex items-center space-x-1 mt-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          contact.is_active ? 'bg-[#25D366]' : 'bg-gray-400'
+                        }`} />
+                        <span className="text-xs text-muted-foreground">
+                          {contact.is_active ? 'En línea' : 'Desconectado'}
+                        </span>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      {contacts.length === 0 && (
+                        <div className="text-center py-8">
+                          <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No hay contactos disponibles</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
 
-              {/* Chat Area */}
-              <div className="flex-1 flex flex-col">
+              {/* Área de chat */}
+              <div className="lg:col-span-2">
                 {selectedContact ? (
-                  <>
-                    {/* Chat Header */}
-                    <div className="p-4 border-b bg-background">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-industrial-gradient text-white">
-                              {selectedContact.name.split(' ').map((n: string) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{selectedContact.name}</p>
-                            <p className="text-sm text-muted-foreground">{selectedContact.role}</p>
-                          </div>
+                  <div className="flex flex-col h-full bg-muted/30 rounded-lg">
+                    {/* Header del chat */}
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur rounded-t-lg">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                            {selectedContact.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'N/A'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-foreground">{selectedContact.name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <div className="w-2 h-2 bg-[#25D366] rounded-full"></div>
+                            En línea
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <MessageCircleCode className="h-4 w-4 mr-2" />
-                                Enviar Template
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-md">
-                              <DialogHeader>
-                                <DialogTitle>Seleccionar Template</DialogTitle>
-                                <DialogDescription>
-                                  Elige un template para enviar a {selectedContact.name}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <Select onValueChange={(value) => setSelectedTemplate(templates.find(t => t.id === value))}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona un template" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {templates.map((template) => (
-                                      <SelectItem key={template.id} value={template.id}>
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="secondary">{template.template_type}</Badge>
-                                          {template.name}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                
-                                {selectedTemplate && (
-                                  <div className="p-3 bg-muted rounded-lg">
-                                    <h4 className="font-medium mb-2">Vista previa:</h4>
-                                    <p className="text-sm">{selectedTemplate.content.title}</p>
-                                  </div>
-                                )}
-                              </div>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
-                                  Cancelar
-                                </Button>
-                                <Button 
-                                  onClick={() => selectedTemplate && handleSendTemplate(selectedTemplate.id)}
-                                  disabled={!selectedTemplate}
-                                >
-                                  Enviar Template
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                          <Button variant="outline" size="sm">
-                            <Phone className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Phone className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => exportConversation(selectedContact.id)}>
+                          <Download className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
 
-                    {/* Messages */}
+                    {/* Mensajes */}
                     <ScrollArea className="flex-1 p-4">
-                      {isLoadingMessages ? (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                            <p className="text-muted-foreground">Cargando mensajes...</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`flex ${message.sender === 'supervisor' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div className={`max-w-[70%] ${
-                                message.sender === 'supervisor' 
-                                  ? 'bg-primary text-primary-foreground' 
-                                  : 'bg-background border'
-                              } rounded-lg p-3`}>
-                                {message.type === 'template' && message.templateData ? (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-sm font-medium">
-                                      <FileCode className="h-4 w-4" />
-                                      Template: {message.templateData.templateName}
-                                    </div>
-                                    <p className="text-sm">{message.text}</p>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm">{message.text}</p>
-                                )}
-
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs opacity-70">{message.timestamp}</span>
-                                  {message.sender === 'supervisor' && getStatusIcon(message.status)}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="space-y-4">
+                        {messages.map((message) => (
+                          <MessageBubble key={message.id} message={message} />
+                        ))}
+                      </div>
                     </ScrollArea>
 
-                    {/* Message Input */}
-                    <div className="p-4 border-t bg-background">
-                      <div className="flex gap-2">
+                    {/* Input de mensaje */}
+                    <div className="p-4 border-t border-border bg-background/80 backdrop-blur rounded-b-lg">
+                      <div className="flex items-center space-x-2">
                         <Input
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           placeholder="Escribe un mensaje..."
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                           className="flex-1"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSendMessage();
+                            }
+                          }}
                         />
-                        <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                          <Send className="h-4 w-4" />
+                        <Button size="sm" onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                          <Send className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedContacts([selectedContact.id]);
+                            setIsTemplateDialogOpen(true);
+                          }}
+                        >
+                          <MessageCircleCode className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center bg-muted/30">
+                  <div className="flex items-center justify-center h-full bg-muted/30 rounded-lg">
                     <div className="text-center">
-                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-lg font-medium">Selecciona un contacto</p>
-                      <p className="text-muted-foreground">Elige una conversación para comenzar</p>
+                      <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                        Selecciona un contacto
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Elige un contacto de la lista para comenzar una conversación
+                      </p>
                     </div>
                   </div>
                 )}
@@ -484,190 +815,17 @@ export default function WhatsAppBusiness() {
             </div>
           </TabsContent>
 
-          <TabsContent value="templates" className="h-full m-0 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Templates WhatsApp</h3>
-                  <p className="text-muted-foreground">Gestiona templates para envío automático</p>
-                </div>
-                <Button asChild>
-                  <a href="/whatsapp-templates">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Administrar Templates
-                  </a>
-                </Button>
-              </div>
-
-              {isLoadingTemplates ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                    <p className="text-muted-foreground">Cargando templates...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {templates.map((template) => (
-                    <Card key={template.id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline">{template.template_type}</Badge>
-                          <Button
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTemplate(template);
-                              setIsTemplateDialogOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{template.name}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {template.content.title}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+          <TabsContent value="templates" className="mt-6 p-6">
+            <TemplatesTab />
           </TabsContent>
 
-          <TabsContent value="contacts" className="h-full m-0 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Gestión de Contactos</h3>
-                  <p className="text-muted-foreground">Administra contactos y envía templates masivos</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Nuevo Contacto
-                  </Button>
-                  {selectedContacts.length > 0 && (
-                    <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <MessageCircleCode className="h-4 w-4 mr-2" />
-                          Enviar Template ({selectedContacts.length})
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Envío Masivo de Template</DialogTitle>
-                          <DialogDescription>
-                            Enviar template a {selectedContacts.length} contacto(s) seleccionado(s)
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Select onValueChange={(value) => setSelectedTemplate(templates.find(t => t.id === value))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un template" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {templates.map((template) => (
-                                <SelectItem key={template.id} value={template.id}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="secondary">{template.template_type}</Badge>
-                                    {template.name}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          {selectedTemplate && (
-                            <div className="p-3 bg-muted rounded-lg">
-                              <h4 className="font-medium mb-2">Vista previa:</h4>
-                              <p className="text-sm">{selectedTemplate.content.title}</p>
-                            </div>
-                          )}
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
-                            Cancelar
-                          </Button>
-                          <Button 
-                            onClick={() => selectedTemplate && handleSendTemplate(selectedTemplate.id)}
-                            disabled={!selectedTemplate}
-                          >
-                            Enviar a {selectedContacts.length} contacto(s)
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-                  <Checkbox
-                    id="select-all"
-                    checked={selectedContacts.length === contacts?.length}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedContacts(contacts?.map(c => c.id) || []);
-                      } else {
-                        setSelectedContacts([]);
-                      }
-                    }}
-                  />
-                  <label htmlFor="select-all" className="text-sm font-medium">
-                    Seleccionar todos ({contacts?.length || 0} contactos)
-                  </label>
-                </div>
-
-                <div className="grid gap-4">
-                  {contactsLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                        <p className="text-muted-foreground">Cargando contactos...</p>
-                      </div>
-                    </div>
-                  ) : contacts?.map((contact) => (
-                    <Card key={contact.id} className="p-4">
-                      <div className="flex items-center gap-4">
-                        <Checkbox
-                          id={`contact-${contact.id}`}
-                          checked={selectedContacts.includes(contact.id)}
-                          onCheckedChange={(checked) => handleContactCheckbox(contact.id, checked as boolean)}
-                        />
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-industrial-gradient text-white">
-                            {contact.name.split(' ').map((n: string) => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-grow">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{contact.name}</p>
-                              <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant="outline">{contact.role}</Badge>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date().toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <TabsContent value="contacts" className="mt-6 p-6">
+            <ContactsTab />
           </TabsContent>
-        </div>
-      </Tabs>
+        </Tabs>
+      </Card>
+
+      <TemplateSelectionDialog />
     </div>
   );
 }
