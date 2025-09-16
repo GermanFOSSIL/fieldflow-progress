@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useWhatsAppPersistence } from './useWhatsAppPersistence';
+import { useWhatsAppTemplates } from './useWhatsAppTemplates';
 
 interface ChatMessage {
   id: string;
   text: string;
   timestamp: Date;
   sender: 'user' | 'bot';
-  type: 'text' | 'report' | 'alert' | 'inventory' | 'weather' | 'location';
+  type: 'text' | 'report' | 'alert' | 'inventory' | 'weather' | 'location' | 'template';
   metadata?: any;
 }
 
@@ -58,12 +60,42 @@ const mockProjectData: ProjectData = {
 export const useWhatsAppBot = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const { saveMessage, conversations } = useWhatsAppPersistence();
+  const { 
+    getTemplateByType, 
+    processTemplateResponse, 
+    generateMenuResponse, 
+    generateFormResponse 
+  } = useWhatsAppTemplates();
 
   const processMessage = useCallback(async (message: string, contactId: string): Promise<ChatMessage> => {
     setIsProcessing(true);
     
     try {
+      // Find conversation for this contact
+      const conversation = conversations?.find(c => c.contact_id === contactId);
+      
+      if (conversation) {
+        // Save user message
+        saveMessage({
+          conversationId: conversation.id,
+          senderType: 'user',
+          messageText: message
+        });
+      }
+      
       const response = await generateIntelligentResponse(message, contactId);
+      
+      if (conversation) {
+        // Save bot response
+        saveMessage({
+          conversationId: conversation.id,
+          senderType: 'bot',
+          messageText: response.text,
+          messageType: response.type,
+          templateData: response.metadata
+        });
+      }
       
       // Simular guardado en base de datos si es necesario
       if (response.type === 'report' || response.type === 'alert') {
@@ -74,11 +106,118 @@ export const useWhatsAppBot = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [conversations, saveMessage]);
 
   const generateIntelligentResponse = async (userMessage: string, contactId: string): Promise<ChatMessage> => {
     const message = userMessage.toLowerCase();
     const timestamp = new Date();
+
+    // Check if this is a menu selection or template response
+    if (message.match(/^[1-4]$/)) {
+      const menuTemplate = getTemplateByType('menu');
+      if (menuTemplate) {
+        const option = menuTemplate.content.options?.[parseInt(message) - 1];
+        if (option) {
+          switch (option.id) {
+            case '1': // Reportar avance
+              const progressTemplate = getTemplateByType('progress_form');
+              if (progressTemplate) {
+                return {
+                  id: Date.now().toString(),
+                  text: generateFormResponse(progressTemplate),
+                  timestamp,
+                  sender: 'bot',
+                  type: 'template',
+                  metadata: { templateId: progressTemplate.id, templateType: 'progress_form' }
+                };
+              }
+              break;
+            case '2': // Consultar inventario
+              const materials = mockProjectData.materials;
+              const lowStock = materials.filter(m => m.status === 'low');
+              
+              let responseText = "📦 **Inventario Actual**\n\n";
+              
+              materials.forEach(material => {
+                const emoji = material.status === 'available' ? '✅' : material.status === 'low' ? '⚠️' : '❌';
+                responseText += `${emoji} ${material.name}: ${material.quantity} ${material.unit}\n`;
+              });
+              
+              if (lowStock.length > 0) {
+                responseText += `\n⚠️ **Materiales con stock bajo:**\n`;
+                lowStock.forEach(material => {
+                  responseText += `• ${material.name}: ${material.quantity} ${material.unit}\n`;
+                });
+                responseText += `\n¿Deseas que genere una orden de compra?`;
+              }
+              
+              return {
+                id: Date.now().toString(),
+                text: responseText,
+                timestamp,
+                sender: 'bot',
+                type: 'inventory',
+                metadata: { 
+                  materials,
+                  lowStock,
+                  requiresAction: lowStock.length > 0
+                }
+              };
+            case '3': // Reportar problema
+              return {
+                id: Date.now().toString(),
+                text: `🚨 *Reporte de Problema*\n\n` +
+                      `Por favor describe el problema incluyendo:\n` +
+                      `• Ubicación específica\n` +
+                      `• Tipo de problema\n` +
+                      `• Nivel de urgencia (1-5)\n` +
+                      `• Personal afectado\n\n` +
+                      `Ejemplo: "Problema eléctrico en área 2, nivel 4, afecta a 3 trabajadores"`,
+                timestamp,
+                sender: 'bot',
+                type: 'alert'
+              };
+            case '4': // Ver clima
+              const weather = mockProjectData.weather;
+              return {
+                id: Date.now().toString(),
+                text: "🌤️ **Pronóstico para los próximos 3 días**\n\n" +
+                      `**Hoy:** ${weather.today}\n` +
+                      `**Mañana:** ${weather.tomorrow}\n` +
+                      `**Pasado mañana:** ${weather.dayAfter}\n\n` +
+                      "⚠️ **Recomendaciones:**\n" +
+                      "• Proteger materiales si hay lluvia\n" +
+                      "• Revisar impermeabilización\n" +
+                      "• Considerar horarios alternativos\n\n" +
+                      "*¿Necesitas ajustar la programación de actividades?*",
+                timestamp,
+                sender: 'bot',
+                type: 'weather'
+              };
+          }
+        }
+      }
+    }
+
+    // Handle structured progress data
+    if (message.includes('actividad:') && message.includes('cantidad:')) {
+      const templateResponse = processTemplateResponse('progress_form', userMessage);
+      if (templateResponse) {
+        return {
+          id: Date.now().toString(),
+          text: `✅ *Avance Registrado*\n\n` +
+                `Gracias por reportar tu avance. La información ha sido guardada:\n\n` +
+                `📝 **Datos registrados:**\n` +
+                `${userMessage}\n\n` +
+                `🎯 El progreso se actualizará en el sistema en breve.\n\n` +
+                `¿Hay algo más que necesites reportar?`,
+          timestamp,
+          sender: 'bot',
+          type: 'report',
+          metadata: templateResponse
+        };
+      }
+    }
     
     // Análisis avanzado del mensaje
     if (message.includes('avance') || message.includes('progreso') || message.includes('estado')) {
@@ -217,16 +356,27 @@ export const useWhatsAppBot = () => {
       };
     }
     
-    // Respuesta por defecto con menú de opciones
+    // Respuesta por defecto con menú de opciones desde template
+    const menuTemplate = getTemplateByType('menu');
+    if (menuTemplate) {
+      return {
+        id: Date.now().toString(),
+        text: generateMenuResponse(menuTemplate),
+        timestamp,
+        sender: 'bot',
+        type: 'text',
+        metadata: { templateId: menuTemplate.id }
+      };
+    }
+
+    // Fallback if no template found
     const responseText = "🤖 **Asistente FieldProgress**\n\n" +
       "Hola! Soy tu asistente inteligente para gestión de obras.\n\n" +
       "**¿En qué puedo ayudarte?**\n" +
       "📊 Consultar avance de obra\n" +
       "🚨 Reportar problemas o solicitar ayuda\n" +
       "📦 Verificar inventarios y materiales\n" +
-      "🌤️ Información del clima\n" +
-      "📍 Ubicaciones del proyecto\n" +
-      "📋 Generar reportes\n\n" +
+      "🌤️ Información del clima\n\n" +
       "*Escribe tu consulta o usa palabras clave como 'avance', 'materiales', 'problema', etc.*";
     
     return {
@@ -237,7 +387,7 @@ export const useWhatsAppBot = () => {
       type: 'text',
       metadata: { 
         isWelcome: true,
-        availableCommands: ['avance', 'materiales', 'problema', 'clima', 'ubicacion']
+        availableCommands: ['avance', 'materiales', 'problema', 'clima']
       }
     };
   };

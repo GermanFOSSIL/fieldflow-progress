@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, TrendingUp, TrendingDown, Calendar, Target, AlertCircle } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Calendar, Target, AlertCircle, Database } from "lucide-react";
 import { useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   LineChart,
   Line,
@@ -19,64 +20,37 @@ import {
 export default function Analytics() {
   const [selectedPeriod, setSelectedPeriod] = useState("30");
   const [selectedSystem, setSelectedSystem] = useState("all");
+  
+  const { 
+    overallKPIs, 
+    systemAnalytics, 
+    progressData: weeklyProgress,
+    projects,
+    isLoading 
+  } = useAnalytics();
 
-  // Mock data para analítica
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 animate-spin" />
+            <span>Cargando datos desde Supabase...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Use real data with fallback to mock data
   const kpiData = {
-    plannedProgress: 75,
-    actualProgress: 67,
-    efficiency: 89.3,
-    onTimeActivities: 156,
-    delayedActivities: 23,
-    totalActivities: 179
+    plannedProgress: overallKPIs.plannedProgress || 75,
+    actualProgress: overallKPIs.actualProgress || 67,
+    efficiency: overallKPIs.efficiency || 89.3,
+    onTimeActivities: overallKPIs.completedActivities || 156,
+    delayedActivities: (overallKPIs.totalActivities - overallKPIs.completedActivities) || 23,
+    totalActivities: overallKPIs.totalActivities || 179
   };
-
-  const systemAnalytics = [
-    {
-      name: "Sistema Tuberías",
-      planned: 80,
-      actual: 78,
-      efficiency: 97.5,
-      trend: "up",
-      activitiesCompleted: 45,
-      activitiesTotal: 58
-    },
-    {
-      name: "Sistema Instrumentos", 
-      planned: 60,
-      actual: 45,
-      efficiency: 75.0,
-      trend: "down",
-      activitiesCompleted: 23,
-      activitiesTotal: 48
-    },
-    {
-      name: "Sistema Eléctrico",
-      planned: 85,
-      actual: 91,
-      efficiency: 107.1,
-      trend: "up",
-      activitiesCompleted: 34,
-      activitiesTotal: 37
-    },
-    {
-      name: "Facilidades Superficie",
-      planned: 70,
-      actual: 62,
-      efficiency: 88.6,
-      trend: "down",
-      activitiesCompleted: 18,
-      activitiesTotal: 36
-    }
-  ];
-
-  const weeklyProgress = [
-    { week: "Sem 1", planned: 3.2, actual: 2.8 },
-    { week: "Sem 2", planned: 6.8, actual: 6.1 },
-    { week: "Sem 3", planned: 11.5, actual: 10.9 },
-    { week: "Sem 4", planned: 17.2, actual: 16.8 },
-    { week: "Sem 5", planned: 23.8, actual: 23.2 },
-    { week: "Sem 6", planned: 31.1, actual: 29.7 }
-  ];
 
   return (
     <div className="space-y-6">
@@ -185,7 +159,7 @@ export default function Analytics() {
                     <Badge 
                       variant={system.efficiency >= 95 ? "default" : system.efficiency >= 80 ? "secondary" : "destructive"}
                     >
-                      {system.efficiency}%
+                      {Math.round(system.efficiency)}%
                     </Badge>
                   </div>
                 </div>
@@ -193,20 +167,20 @@ export default function Analytics() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Planificado</p>
-                    <p className="font-mono">{system.planned}%</p>
+                    <p className="font-mono">{Math.round(system.planned)}%</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Real</p>
-                    <p className="font-mono">{system.actual}%</p>
+                    <p className="font-mono">{Math.round(system.actual)}%</p>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Actividades completadas</span>
-                  <span className="font-mono">{system.activitiesCompleted}/{system.activitiesTotal}</span>
+                  <span className="font-mono">{system.completedActivities}/{system.activities}</span>
                 </div>
                 
-                <Progress value={(system.activitiesCompleted / system.activitiesTotal) * 100} />
+                <Progress value={(system.completedActivities / system.activities) * 100} />
               </div>
             ))}
           </CardContent>

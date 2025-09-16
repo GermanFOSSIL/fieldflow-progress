@@ -33,6 +33,7 @@ const menuItems = [
   { title: "Reportes", url: "/reports", icon: FileText },
   { title: "Analítica", url: "/analytics", icon: BarChart3 },
   { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
+  { title: "Base de Datos", url: "/database", icon: BarChart3 },
 ];
 
 export function AppNavbar() {

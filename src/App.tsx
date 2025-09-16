@@ -17,6 +17,7 @@ import Approve from "./pages/Approve";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
 import WhatsAppChat from "./pages/WhatsAppChat";
+import DatabaseAdmin from "./pages/DatabaseAdmin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -117,6 +118,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AuthenticatedLayout>
                     <WhatsAppChat />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/database" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <DatabaseAdmin />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
