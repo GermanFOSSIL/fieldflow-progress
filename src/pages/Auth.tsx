@@ -20,7 +20,6 @@ export default function Auth() {
 
   // Estados para login
   const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
   
   // Estados para registro
   const [signupEmail, setSignupEmail] = useState("");
@@ -37,36 +36,41 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail || !loginPassword) return;
+    if (!loginEmail) return;
 
     setLoading(true);
     setError("");
     setMessage("");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      const { error } = await supabase.auth.signInWithOtp({
         email: loginEmail,
-        password: loginPassword,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
 
       if (error) {
-        setError(error.message);
+        setError("Error al enviar el enlace de acceso. Verifica tu email e inténtalo nuevamente.");
+        console.error("Sign in error:", error);
       } else {
-        setMessage("¡Inicio de sesión exitoso!");
-        navigate("/dashboard");
+        setMessage("¡Perfecto! Revisa tu correo, te enviamos un enlace de acceso seguro.");
       }
     } catch (err) {
-      setError("Error de conexión. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
+      setError("Error inesperado. Inténtalo nuevamente.");
+      console.error("Login error:", err);
     }
+
+    setLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!signupEmail || !signupPassword || !fullName) {
-      setError("Por favor completa todos los campos.");
+      setError("Por favor completa todos los campos obligatorios.");
       return;
     }
 
@@ -85,10 +89,13 @@ export default function Auth() {
     setMessage("");
 
     try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
       const { error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName
           }
@@ -105,7 +112,7 @@ export default function Auth() {
         }
         console.error("Sign up error:", error);
       } else {
-        setMessage("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+        setMessage("¡Cuenta creada exitosamente! Revisa tu correo para confirmar tu cuenta y poder acceder.");
       }
     } catch (err) {
       setError("Error inesperado al crear la cuenta.");
@@ -116,55 +123,37 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-            <Building className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Sistema Construcción</h1>
-          <p className="text-slate-600">Gestión de Proyectos de Construcción</p>
-        </div>
-
-        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-2xl text-center text-slate-800">
-              Acceso al Sistema
+        <Card className="construction-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-hover rounded-xl flex items-center justify-center shadow-lg">
+                <Building className="h-8 w-8 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold text-foreground">
+              FieldProgress
             </CardTitle>
-            <CardDescription className="text-center text-slate-600">
-              Ingresa tus credenciales para continuar
+            <CardDescription>
+              Gestión profesional de avance de obras
             </CardDescription>
           </CardHeader>
+          
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login" className="flex items-center gap-2">
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="h-4 w-4" />
                   Iniciar Sesión
                 </TabsTrigger>
                 <TabsTrigger value="signup" className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlus className="h-4 w-4" />
                   Registrarse
                 </TabsTrigger>
               </TabsList>
 
-              {message && (
-                <Alert className="mb-4 border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    {message}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <TabsContent value="login">
+              <TabsContent value="login" className="space-y-4 mt-6">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email" className="text-sm font-medium">
@@ -182,40 +171,28 @@ export default function Auth() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-sm font-medium">
-                      Contraseña
-                    </Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="Tu contraseña"
-                      required
-                      disabled={loading}
-                      className="h-10"
-                    />
-                  </div>
-
                   <Button 
                     type="submit" 
-                    className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    className="w-full h-10 bg-primary hover:bg-primary-hover text-primary-foreground font-medium"
                     disabled={loading}
                   >
-                    {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                    {loading ? "Enviando..." : "Enviar enlace de acceso"}
                   </Button>
                 </form>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  <p>Te enviaremos un enlace seguro por email</p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="signup">
+              <TabsContent value="signup" className="space-y-4 mt-6">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm font-medium">
-                      Nombre completo
+                    <Label htmlFor="full-name" className="text-sm font-medium">
+                      Nombre completo *
                     </Label>
                     <Input
-                      id="fullName"
+                      id="full-name"
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
@@ -228,7 +205,7 @@ export default function Auth() {
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-email" className="text-sm font-medium">
-                      Correo electrónico
+                      Correo electrónico *
                     </Label>
                     <Input
                       id="signup-email"
@@ -244,7 +221,7 @@ export default function Auth() {
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-password" className="text-sm font-medium">
-                      Contraseña
+                      Contraseña *
                     </Label>
                     <Input
                       id="signup-password"
@@ -260,14 +237,14 @@ export default function Auth() {
 
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password" className="text-sm font-medium">
-                      Confirmar contraseña
+                      Confirmar contraseña *
                     </Label>
                     <Input
                       id="confirm-password"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repite tu contraseña"
+                      placeholder="Repite la contraseña"
                       required
                       disabled={loading}
                       className="h-10"
@@ -276,20 +253,45 @@ export default function Auth() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    className="w-full h-10 bg-success hover:bg-success/90 text-success-foreground font-medium"
                     disabled={loading}
                   >
-                    {loading ? "Creando cuenta..." : "Crear Cuenta"}
+                    {loading ? "Creando cuenta..." : "Crear cuenta"}
                   </Button>
                 </form>
+
+                <div className="text-center text-xs text-muted-foreground">
+                  <p>Al registrarte serás asignado como <span className="font-medium">Reportero</span></p>
+                  <p>Un supervisor puede cambiar tu rol posteriormente</p>
+                </div>
               </TabsContent>
             </Tabs>
+
+            {error && (
+              <Alert className="mt-4 border-destructive/50 bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <AlertDescription className="text-destructive text-sm">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {message && (
+              <Alert className="mt-4 border-success/50 bg-success/10">
+                <CheckCircle className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success text-sm">
+                  {message}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="mt-6 pt-4 border-t border-border text-center text-xs text-muted-foreground">
+              <p>
+                Al usar FieldProgress aceptas nuestros términos de servicio y política de privacidad.
+              </p>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="text-center mt-6 text-sm text-slate-600">
-          <p>© 2024 Sistema Construcción. Todos los derechos reservados.</p>
-        </div>
       </div>
     </div>
   );

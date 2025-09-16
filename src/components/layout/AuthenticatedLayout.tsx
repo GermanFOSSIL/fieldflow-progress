@@ -1,20 +1,17 @@
-import { useState, ReactNode } from "react";
-import { ModernSidebar } from "./ModernSidebar";
+import { ReactNode } from "react";
+import { AppNavbar } from "./AppNavbar";
 
 interface AuthenticatedLayoutProps {
   children: ReactNode;
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   return (
-    <div className="min-h-screen flex w-full bg-slate-50">
-      <ModernSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-64'}`}>
-        <main className="flex-1 p-6 overflow-auto">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-screen bg-background">
+      <AppNavbar />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {children}
+      </main>
     </div>
   );
 }
