@@ -30,8 +30,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <RoleDashboard />
+    </div>
+  );
         <div>
           <h1 className="text-3xl font-bold">Panel del Proyecto</h1>
           <p className="text-muted-foreground">Planta de Procesamiento de Gas San Martín - Resumen de Progreso</p>

@@ -6,6 +6,7 @@ import { HardHat, Bell, User, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { SmartProjectSelector } from "./SmartProjectSelector";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 export function AppHeader() {
   const { user, signOut } = useAuth();
@@ -33,9 +34,7 @@ export function AppHeader() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationCenter />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
