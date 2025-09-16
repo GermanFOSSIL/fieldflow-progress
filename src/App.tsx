@@ -117,7 +117,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/whatsapp-business" 
+              path="/whatsapp" 
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>

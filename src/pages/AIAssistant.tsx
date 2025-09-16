@@ -19,6 +19,7 @@ import {
   Zap
 } from "lucide-react";
 import { useProject } from "@/contexts/ProjectContext";
+import { useDataQueryBot } from "@/hooks/useDataQueryBot";
 
 interface ChatMessage {
   id: string;
@@ -40,6 +41,7 @@ interface QuickAction {
 
 export default function AIAssistant() {
   const { selectedProject } = useProject();
+  const { processDataQuery, isProcessing: isBotProcessing } = useDataQueryBot();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -103,7 +105,7 @@ export default function AIAssistant() {
   ];
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !selectedProject) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -117,53 +119,82 @@ export default function AIAssistant() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage('');
     setIsProcessing(true);
 
-    // Simulate AI processing
-    setTimeout(() => {
+    try {
+      // Use real data query bot
+      const response = await processDataQuery(currentInput, selectedProject.id);
+      
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'assistant',
-        content: generateAIResponse(inputMessage),
+        content: response.text,
+        timestamp: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        type: 'text',
+        metadata: response.metadata
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: 'assistant',
+        content: 'Lo siento, ocurrió un error al procesar tu consulta. Por favor intenta nuevamente.',
         timestamp: new Date().toLocaleTimeString('es-ES', { 
           hour: '2-digit', 
           minute: '2-digit' 
         }),
         type: 'text'
       };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleQuickAction = async (action: QuickAction) => {
+    if (!selectedProject) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      const response = await processDataQuery(action.action, selectedProject.id);
+      
+      const assistantMessage: ChatMessage = {
+        id: Date.now().toString(),
+        sender: 'assistant',
+        content: response.text,
+        timestamp: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        type: 'text',
+        metadata: response.metadata
+      };
 
       setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        sender: 'assistant',
+        content: 'Lo siento, no pude procesar esta acción. Por favor intenta nuevamente.',
+        timestamp: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        type: 'text'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
-  const handleQuickAction = (action: QuickAction) => {
-    setInputMessage(action.action);
-    handleSendMessage();
-  };
-
-  const generateAIResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
-    
-    if (lowerInput.includes('progreso') || lowerInput.includes('avance')) {
-      return 'Analizando el progreso actual: El proyecto muestra un 68.5% de avance general. Las estructuras van adelantadas (85%), pero las instalaciones están retrasadas (45%). Recomiendo enfocar recursos en instalaciones para mantener el cronograma.';
-    }
-    
-    if (lowerInput.includes('riesgo') || lowerInput.includes('problema')) {
-      return 'He identificado 3 riesgos principales: 1) Retraso en instalaciones eléctricas (impacto alto), 2) Dependencia crítica en suministro de materiales (impacto medio), 3) Condiciones climáticas adversas próxima semana (impacto bajo).';
-    }
-    
-    if (lowerInput.includes('predicc') || lowerInput.includes('fecha')) {
-      return 'Basado en el ritmo actual, la fecha estimada de finalización es 15 de marzo (5 días después de lo planificado). Para cumplir con la fecha original, necesitas aumentar la productividad en instalaciones un 20%.';
-    }
-    
-    if (lowerInput.includes('recurso') || lowerInput.includes('optimiz')) {
-      return 'Análisis de recursos: Tienes subutilización en estructura (capacidad extra del 15%) y sobrecarga en instalaciones (130% de capacidad). Sugiero reasignar 2 operarios de estructura a instalaciones.';
-    }
-    
-    return 'Entiendo tu consulta. Basado en los datos del proyecto, puedo ayudarte con análisis específicos. ¿Podrías ser más específico sobre qué aspecto te interesa: progreso, recursos, riesgos, o predicciones?';
-  };
 
   return (
     <div className="h-[calc(100vh-8rem)] flex bg-background">
@@ -312,7 +343,7 @@ export default function AIAssistant() {
               </div>
             ))}
             
-            {isProcessing && (
+            {(isProcessing || isBotProcessing) && (
               <div className="flex justify-start">
                 <div className="bg-background border shadow-sm rounded-lg p-4 max-w-[80%]">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -333,12 +364,12 @@ export default function AIAssistant() {
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="Pregunta sobre el progreso, riesgos, predicciones..."
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              disabled={isProcessing}
+              disabled={isProcessing || isBotProcessing || !selectedProject}
               className="flex-1"
             />
             <Button 
               onClick={handleSendMessage} 
-              disabled={!inputMessage.trim() || isProcessing}
+              disabled={!inputMessage.trim() || isProcessing || isBotProcessing || !selectedProject}
             >
               <Send className="h-4 w-4" />
             </Button>

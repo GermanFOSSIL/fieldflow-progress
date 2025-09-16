@@ -33,7 +33,7 @@ const coreMenuItems = [
 ];
 
 const communicationItems = [
-  { title: "WhatsApp Business", url: "/whatsapp-business", icon: MessageSquare },
+  { title: "WhatsApp Business", url: "/whatsapp", icon: MessageSquare },
   { title: "Asistente IA", url: "/ai-assistant", icon: Brain },
 ];
 

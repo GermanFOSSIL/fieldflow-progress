@@ -9,7 +9,7 @@ export function SmartProjectSelector() {
   const location = useLocation();
 
   // Routes where project selector should be visible
-  const projectRelevantRoutes = ['/dashboard', '/whatsapp', '/whatsapp-templates', '/capture', '/reports', '/analytics'];
+  const projectRelevantRoutes = ['/dashboard', '/whatsapp', '/whatsapp-templates', '/capture', '/reports', '/analytics', '/ai-assistant', '/approve'];
   const shouldShow = projectRelevantRoutes.some(route => location.pathname.startsWith(route));
 
   if (!shouldShow) return null;
