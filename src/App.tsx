@@ -11,13 +11,14 @@ import { AuthenticatedLayout } from "@/components/layout/AuthenticatedLayout";
 
 // Pages
 import Welcome from "./pages/Welcome";
-import Dashboard from "./pages/Dashboard";
+import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import ProgressCapture from "./pages/ProgressCapture";
 import ImportPlan from "./pages/ImportPlan";
 import Approve from "./pages/Approve";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
-import WhatsAppChat from "./pages/WhatsAppChat";
+import WhatsAppBusiness from "./pages/WhatsAppBusiness";
+import AIAssistant from "./pages/AIAssistant";
 import WhatsAppTemplateAdmin from "./pages/WhatsAppTemplateAdmin";
 import DatabaseAdmin from "./pages/DatabaseAdmin";
 import Auth from "./pages/Auth";
@@ -60,7 +61,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <Dashboard />
+                    <ExecutiveDashboard />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
@@ -116,11 +117,21 @@ const App = () => (
               } 
             />
             <Route 
-              path="/whatsapp" 
+              path="/whatsapp-business" 
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <WhatsAppChat />
+                    <WhatsAppBusiness />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-assistant" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <AIAssistant />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 

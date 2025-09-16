@@ -30,7 +30,13 @@ export function AppHeader() {
             <HardHat className="h-6 w-6 text-primary" />
             <span className="font-semibold text-foreground">FieldProgress</span>
           </div>
-          <SmartProjectSelector />
+        </div>
+        
+        {/* Project Selector - Centered and Prominent */}
+        <div className="flex-1 flex justify-center">
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg px-4 py-2 min-w-[280px]">
+            <SmartProjectSelector />
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
