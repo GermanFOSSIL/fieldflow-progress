@@ -52,7 +52,7 @@ interface Message {
   };
 }
 
-export default function WhatsAppBusiness() {
+export default function WhatsApp() {
   const { selectedProject } = useProject();
   const { toast } = useToast();
   
@@ -582,7 +582,7 @@ export default function WhatsAppBusiness() {
               <div className="w-10 h-10 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-xl flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
-              WhatsApp Business
+              WhatsApp Chat
             </h1>
             <p className="text-muted-foreground">
               Gestiona las comunicaciones con tu equipo de trabajo
@@ -605,7 +605,7 @@ export default function WhatsAppBusiness() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{messages.length}</p>
-                <p className="text-xs text-muted-foreground">Mensajes Enviados</p>
+                <p className="text-xs text-muted-foreground">Mensajes</p>
               </div>
             </div>
           </Card>
@@ -629,7 +629,7 @@ export default function WhatsAppBusiness() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">98%</p>
-                <p className="text-xs text-muted-foreground">Tasa de Entrega</p>
+                <p className="text-xs text-muted-foreground">Entregados</p>
               </div>
             </div>
           </Card>
@@ -641,7 +641,7 @@ export default function WhatsAppBusiness() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{templates.length}</p>
-                <p className="text-xs text-muted-foreground">Plantillas Disponibles</p>
+                <p className="text-xs text-muted-foreground">Plantillas</p>
               </div>
             </div>
           </Card>
