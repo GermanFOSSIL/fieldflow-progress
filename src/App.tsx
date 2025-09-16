@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ProjectProvider } from "@/contexts/ProjectContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AuthenticatedLayout } from "@/components/layout/AuthenticatedLayout";
@@ -17,6 +18,7 @@ import Approve from "./pages/Approve";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
 import WhatsAppChat from "./pages/WhatsAppChat";
+import WhatsAppTemplateAdmin from "./pages/WhatsAppTemplateAdmin";
 import DatabaseAdmin from "./pages/DatabaseAdmin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -27,6 +29,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <ProjectProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -123,6 +126,16 @@ const App = () => (
               } 
             />
             <Route 
+              path="/whatsapp-templates" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <WhatsAppTemplateAdmin />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/database" 
               element={
                 <ProtectedRoute>
@@ -137,6 +150,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </ProjectProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
