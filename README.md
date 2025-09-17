@@ -9,7 +9,7 @@ FieldProgress es una aplicación web completa para la gestión de proyectos de c
 - **Styling**: Tailwind CSS + shadcn/ui components  
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
 - **Autenticación**: Supabase Auth
-- **Comunicación**: WhatsApp Business API integration
+- **Comunicación**: WhatsApp API integration
 - **Charts**: Recharts
 - **Estado**: React Query + Context API
 
@@ -21,7 +21,7 @@ Vista ejecutiva con KPIs y métricas principales
 - Gráficos de progreso vs planificado
 - Alertas y notificaciones importantes
 
-### 2. **WhatsApp Business** (`/whatsapp`)
+### 2. **WhatsApp** (`/whatsapp`)
 Centro de comunicación con trabajadores
 - **Conversaciones**: Chat en tiempo real
 - **Templates**: Mensajes automatizados
@@ -75,7 +75,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 - [🏗️ Arquitectura del Sistema](./docs/ARCHITECTURE.md)
 - [🗃️ Esquema de Base de Datos](./docs/DATABASE.md)
 - [📊 Executive Dashboard](./docs/pages/EXECUTIVE_DASHBOARD.md)
-- [📱 WhatsApp Business](./docs/pages/WHATSAPP_BUSINESS.md)
+- [📱 WhatsApp](./docs/pages/WHATSAPP_BUSINESS.md)
 - [📋 Progress Capture](./docs/pages/PROGRESS_CAPTURE.md)
 
 ## 🔒 Seguridad
