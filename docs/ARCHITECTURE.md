@@ -23,7 +23,7 @@ graph TB
     end
     
     subgraph "External Services"
-        P[WhatsApp Business API]
+        P[WhatsApp API]
         Q[AI/ML Services]
         R[GPS/Maps APIs]
     end
@@ -106,7 +106,7 @@ fieldprogress/
 │   │   ├── Auth.tsx         # Autenticación
 │   │   ├── ExecutiveDashboard.tsx
 │   │   ├── ProgressCapture.tsx
-│   │   ├── WhatsAppBusiness.tsx
+│   │   ├── WhatsApp.tsx
 │   │   └── ...              # Otras páginas
 │   ├── hooks/               # Custom React Hooks
 │   │   ├── useAuth.ts       # Authentication hook
@@ -402,7 +402,7 @@ const queryClient = new QueryClient({
 });
 
 // Code splitting for better initial load
-const WhatsAppBusiness = lazy(() => import('./pages/WhatsAppBusiness'));
+const WhatsApp = lazy(() => import('./pages/WhatsApp'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 
 // Image optimization

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSupabaseConnection } from '@/hooks/useSupabaseConnection';
+import { mockProjects } from '@/lib/mock-data';
 
 interface Project {
   id: string;
@@ -27,19 +29,15 @@ interface ProjectProviderProps {
 
 export function ProjectProvider({ children }: ProjectProviderProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const { isConnected } = useSupabaseConnection();
 
-  // Fetch all projects
+  // Fetch all projects - modo offline forzado
   const { data: projects = [], isLoading, error } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('status', 'active')
-        .order('name');
-      
-      if (error) throw error;
-      return data as Project[];
+      console.log('📁 Cargando proyectos en modo offline');
+      // Siempre usar datos mock en modo offline
+      return mockProjects as unknown as Project[];
     }
   });
 

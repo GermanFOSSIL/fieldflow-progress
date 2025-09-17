@@ -6,305 +6,469 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, Calendar, User, MapPin, MessageSquare, Phone, Image } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CheckCircle2, XCircle, Clock, Calendar, User, MapPin, MessageSquare, Phone, Image, Loader2, Eye, AlertTriangle } from "lucide-react";
+import { useApprove } from "@/hooks/useApprove";
 import { useProject } from "@/contexts/ProjectContext";
-
-interface MockEntry {
-  id: string;
-  code: string;
-  activity: string;
-  unit: string;
-  boqQty: number;
-  executedQty: number;
-  todayQty: number;
-  comment?: string;
-}
-
-interface MockReport {
-  id: string;
-  reportDate: string;
-  shift: string;
-  reporter: string;
-  supervisorId?: string;
-  notes?: string;
-  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'whatsapp';
-  source: 'app' | 'whatsapp';
-  entries: MockEntry[];
-  whatsappData?: {
-    phone: string;
-    timestamp: string;
-    attachments?: string[];
-    location?: string;
-  };
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function Approve() {
-  const { toast } = useToast();
   const { selectedProject } = useProject();
-  const [reports, setReports] = useState<MockReport[]>([
-    {
-      id: "REP001",
-      reportDate: "2024-01-15",
-      shift: "Mañana", 
-      reporter: "Carlos Mendez",
-      notes: "Avance normal, sin contratiempos",
-      status: "sent",
-      source: "app",
-      entries: [
-        {
-          id: "E001",
-          code: "EST.001", 
-          activity: "Estructura Torre A - Piso 5",
-          unit: "m³",
-          boqQty: 150,
-          executedQty: 128,
-          todayQty: 15,
-          comment: "Completado según cronograma"
-        }
-      ]
-    },
-    {
-      id: "REP002",
-      reportDate: "2024-01-15",
-      shift: "Tarde",
-      reporter: "Ana López",
-      notes: "Reporte enviado desde campo vía WhatsApp",
-      status: "whatsapp",
-      source: "whatsapp",
-      whatsappData: {
-        phone: "+52 555 987 6543",
-        timestamp: "2024-01-15T14:30:00Z",
-        attachments: ["excavacion-sector-b.jpg", "mediciones.jpg"],
-        location: "Sector B - Zona de excavación"
-      },
-      entries: [
-        {
-          id: "E003",
-          code: "EXC.001",
-          activity: "Excavación Sector B",
-          unit: "m³",
-          boqQty: 200,
-          executedQty: 165,
-          todayQty: 25,
-          comment: "Enviado desde WhatsApp - necesita validación"
-        }
-      ]
+  const { user } = useAuth();
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [approvalNotes, setApprovalNotes] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
+
+  const {
+    pendingReports,
+    allReports,
+    reportsLoading,
+    allReportsLoading,
+    approveReport,
+    rejectReport,
+    getApprovalStats,
+    isApproving,
+    isRejecting
+  } = useApprove(selectedProject?.id);
+
+  const stats = getApprovalStats();
+
+  const handleApprove = async () => {
+    if (!selectedReport) return;
+    
+    try {
+      await approveReport(selectedReport.id, approvalNotes);
+      setIsApprovalDialogOpen(false);
+      setApprovalNotes("");
+      setSelectedReport(null);
+    } catch (error) {
+      console.error("Error approving report:", error);
     }
-  ]);
+  };
 
-  const handleApprove = (reportId: string) => {
-    setReports(prev => prev.map(report => 
-      report.id === reportId ? { ...report, status: "approved" } : report
-    ));
+  const handleReject = async () => {
+    if (!selectedReport || !rejectionReason.trim()) {
+      toast.error("Debes proporcionar una razón para el rechazo");
+      return;
+    }
     
-    toast({
-      title: "Reporte Aprobado",
-      description: `Reporte ${reportId} aprobado e integrado al sistema.`,
-    });
+    try {
+      await rejectReport(selectedReport.id, rejectionReason);
+      setIsRejectionDialogOpen(false);
+      setRejectionReason("");
+      setSelectedReport(null);
+    } catch (error) {
+      console.error("Error rejecting report:", error);
+    }
   };
 
-  const handleReject = (reportId: string) => {
-    setReports(prev => prev.map(report => 
-      report.id === reportId ? { ...report, status: "rejected" } : report
-    ));
-    
-    toast({
-      title: "Reporte Rechazado",
-      description: `Reporte ${reportId} rechazado.`,
-      variant: "destructive",
-    });
+  const openApprovalDialog = (report: any) => {
+    setSelectedReport(report);
+    setIsApprovalDialogOpen(true);
   };
 
-  const updateQuantity = (reportId: string, entryId: string, newQty: number) => {
-    setReports(prev => prev.map(report => 
-      report.id === reportId 
-        ? {
-            ...report,
-            entries: report.entries.map(entry =>
-              entry.id === entryId ? { ...entry, todayQty: newQty } : entry
-            )
-          }
-        : report
-    ));
+  const openRejectionDialog = (report: any) => {
+    setSelectedReport(report);
+    setIsRejectionDialogOpen(true);
   };
+
+  if (!selectedProject) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+            Selecciona un proyecto
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Necesitas seleccionar un proyecto para aprobar reportes
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Aprobaciones</h1>
+          <h1 className="text-3xl font-bold">Aprobar Reportes</h1>
           <p className="text-muted-foreground">
-            Revisar y aprobar reportes de avance - Proyecto: {selectedProject?.name || 'Ninguno'}
+            Revisa y aprueba los reportes de avance del proyecto
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            {reports.filter(r => r.status === 'sent').length} App
+          <Badge variant="outline" className="text-sm">
+            {user?.email || 'Supervisor'}
           </Badge>
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            {reports.filter(r => r.status === 'whatsapp').length} WhatsApp
-          </Badge>
-          <Badge variant="outline">
-            {reports.filter(r => ['sent', 'whatsapp'].includes(r.status)).length} Total Pendientes
+          <Badge variant="secondary" className="text-sm">
+            {selectedProject.name}
           </Badge>
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">Todos ({reports.length})</TabsTrigger>
-          <TabsTrigger value="app">App ({reports.filter(r => r.source === 'app').length})</TabsTrigger>
-          <TabsTrigger value="whatsapp">WhatsApp ({reports.filter(r => r.source === 'whatsapp').length})</TabsTrigger>
-          <TabsTrigger value="pending">Pendientes ({reports.filter(r => ['sent', 'whatsapp'].includes(r.status)).length})</TabsTrigger>
-        </TabsList>
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.pending}</p>
+                  <p className="text-xs text-muted-foreground">Pendientes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {['all', 'app', 'whatsapp', 'pending'].map((tab) => (
-          <TabsContent key={tab} value={tab} className="space-y-4">
-            {reports
-              .filter(r => {
-                if (tab === 'app') return r.source === 'app';
-                if (tab === 'whatsapp') return r.source === 'whatsapp';
-                if (tab === 'pending') return ['sent', 'whatsapp'].includes(r.status);
-                return true;
-              })
-              .map((report) => (
-                <Card key={report.id} className="overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            Reporte #{report.id}
-                            {report.source === 'whatsapp' && (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                <MessageSquare className="h-3 w-3 mr-1" />
-                                WhatsApp
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-4 mt-1">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {report.reportDate}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {report.shift}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <User className="h-4 w-4" />
-                              {report.reporter}
-                            </span>
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Badge
-                        variant={
-                          report.status === 'approved' 
-                            ? 'default' 
-                            : report.status === 'rejected' 
-                            ? 'destructive' 
-                            : 'secondary'
-                        }
-                      >
-                        {report.status === 'approved' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                        {report.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                        {report.status === 'sent' && <Clock className="h-3 w-3 mr-1" />}
-                        {report.status === 'whatsapp' && <MessageSquare className="h-3 w-3 mr-1" />}
-                        {report.status === 'approved' && 'Aprobado'}
-                        {report.status === 'rejected' && 'Rechazado'}  
-                        {report.status === 'sent' && 'Pendiente'}
-                        {report.status === 'whatsapp' && 'WhatsApp - Pendiente'}
-                      </Badge>
-                    </div>
-                    
-                    {report.whatsappData && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <MessageSquare className="h-4 w-4 text-green-600" />
-                            <span className="font-medium">Recibido vía WhatsApp</span>
-                            <span className="text-muted-foreground">
-                              {new Date(report.whatsappData.timestamp).toLocaleString()}
-                            </span>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.approved}</p>
+                  <p className="text-xs text-muted-foreground">Aprobados</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.rejected}</p>
+                  <p className="text-xs text-muted-foreground">Rechazados</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.approvalRate.toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Tasa Aprobación</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <Card>
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="pending">Pendientes ({pendingReports?.length || 0})</TabsTrigger>
+            <TabsTrigger value="history">Historial ({allReports?.length || 0})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="pending" className="mt-6">
+            <div className="space-y-4">
+              {reportsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Cargando reportes...</span>
+                </div>
+              ) : pendingReports?.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingReports.map((report) => (
+                    <Card key={report.id} className="border-l-4 border-l-yellow-500">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">
+                              Reporte del {new Date(report.date).toLocaleDateString()}
+                            </CardTitle>
+                            <CardDescription>
+                              Turno: {report.shift} | Reportero: {report.reporter?.full_name || report.reporter?.email}
+                            </CardDescription>
                           </div>
-                          {report.whatsappData.location && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4" />
-                              {report.whatsappData.location}
-                            </div>
-                          )}
-                          {report.whatsappData.attachments && report.whatsappData.attachments.length > 0 && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Image className="h-4 w-4" />
-                              {report.whatsappData.attachments.length} imagen(es)
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">
+                              {report.total_activities} actividades
+                            </Badge>
+                            <Badge variant="outline">
+                              {report.total_progress} progreso
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </CardHeader>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {report.notes && (
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-sm">
+                                <strong>Notas:</strong> {report.notes}
+                              </p>
+                            </div>
+                          )}
 
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Código</TableHead>
-                          <TableHead>Actividad</TableHead>
-                          <TableHead>Unidad</TableHead>
-                          <TableHead>BOQ</TableHead>
-                          <TableHead>Ejecutado</TableHead>
-                          <TableHead>Hoy</TableHead>
-                          <TableHead>Comentario</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {report.entries.map((entry) => (
-                          <TableRow key={entry.id}>
-                            <TableCell className="font-mono">{entry.code}</TableCell>
-                            <TableCell>{entry.activity}</TableCell>
-                            <TableCell>{entry.unit}</TableCell>
-                            <TableCell>{entry.boqQty}</TableCell>
-                            <TableCell>{entry.executedQty}</TableCell>
-                            <TableCell>
-                              {['sent', 'whatsapp'].includes(report.status) ? (
-                                <Input
-                                  type="number"
-                                  value={entry.todayQty}
-                                  onChange={(e) => updateQuantity(report.id, entry.id, parseFloat(e.target.value) || 0)}
-                                  className="w-20"
-                                />
-                              ) : (
-                                entry.todayQty
-                              )}
-                            </TableCell>
-                            <TableCell className="max-w-[200px]">
-                              <p className="text-sm truncate">{entry.comment}</p>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                          {/* Activities Summary */}
+                          {report.entries && report.entries.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="font-medium">Actividades Reportadas:</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {report.entries.slice(0, 4).map((entry) => (
+                                  <div key={entry.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                                    <span className="text-sm font-medium">{entry.activity?.code}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {entry.quantity} {entry.activity?.unit}
+                                    </span>
+                                  </div>
+                                ))}
+                                {report.entries.length > 4 && (
+                                  <div className="text-sm text-muted-foreground">
+                                    +{report.entries.length - 4} más...
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
-                    {['sent', 'whatsapp'].includes(report.status) && (
-                      <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
-                        <Button variant="outline" onClick={() => handleReject(report.id)}>
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Rechazar
-                        </Button>
-                        <Button onClick={() => handleApprove(report.id)}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Aprobar
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 pt-4 border-t">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedReport(report)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Detalles
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => openApprovalDialog(report)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Aprobar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => openRejectionDialog(report)}
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Rechazar
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CheckCircle2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    No hay reportes pendientes
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Todos los reportes han sido procesados
+                  </p>
+                </div>
+              )}
+            </div>
           </TabsContent>
-        ))}
-      </Tabs>
+
+          <TabsContent value="history" className="mt-6">
+            <div className="space-y-4">
+              {allReportsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Cargando historial...</span>
+                </div>
+              ) : allReports?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Turno</TableHead>
+                        <TableHead>Reportero</TableHead>
+                        <TableHead>Actividades</TableHead>
+                        <TableHead>Progreso</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allReports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
+                          <TableCell className="capitalize">{report.shift}</TableCell>
+                          <TableCell>{report.reporter?.full_name || report.reporter?.email}</TableCell>
+                          <TableCell>{report.total_activities}</TableCell>
+                          <TableCell>{report.total_progress}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                report.status === 'approved' ? 'default' :
+                                report.status === 'rejected' ? 'destructive' : 'secondary'
+                              }
+                            >
+                              {report.status === 'approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                              {report.status === 'rejected' && <XCircle className="w-3 h-3 mr-1" />}
+                              {report.status === 'submitted' && <Clock className="w-3 h-3 mr-1" />}
+                              {report.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedReport(report)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    No hay reportes en el historial
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Los reportes aprobados aparecerán aquí
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Card>
+
+      {/* Approval Dialog */}
+      <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aprobar Reporte</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres aprobar este reporte?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedReport && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p><strong>Fecha:</strong> {new Date(selectedReport.date).toLocaleDateString()}</p>
+                <p><strong>Turno:</strong> {selectedReport.shift}</p>
+                <p><strong>Reportero:</strong> {selectedReport.reporter?.full_name || selectedReport.reporter?.email}</p>
+                <p><strong>Actividades:</strong> {selectedReport.total_activities}</p>
+                <p><strong>Progreso:</strong> {selectedReport.total_progress}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">Notas de aprobación (opcional)</label>
+              <Textarea
+                value={approvalNotes}
+                onChange={(e) => setApprovalNotes(e.target.value)}
+                placeholder="Agrega comentarios sobre la aprobación..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleApprove} 
+              disabled={isApproving}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isApproving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Aprobando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Aprobar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Dialog */}
+      <Dialog open={isRejectionDialogOpen} onOpenChange={setIsRejectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechazar Reporte</DialogTitle>
+            <DialogDescription>
+              Proporciona una razón para el rechazo del reporte
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedReport && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p><strong>Fecha:</strong> {new Date(selectedReport.date).toLocaleDateString()}</p>
+                <p><strong>Turno:</strong> {selectedReport.shift}</p>
+                <p><strong>Reportero:</strong> {selectedReport.reporter?.full_name || selectedReport.reporter?.email}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">Razón del rechazo *</label>
+              <Textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Explica por qué se rechaza este reporte..."
+                className="mt-1"
+                rows={3}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRejectionDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleReject} 
+              disabled={isRejecting || !rejectionReason.trim()}
+            >
+              {isRejecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Rechazando...
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Rechazar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

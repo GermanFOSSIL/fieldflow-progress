@@ -19,7 +19,8 @@ import {
   MessageSquare,
   FileText,
   AlertCircle,
-  ClipboardList
+  ClipboardList,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -280,12 +281,7 @@ export default function WhatsAppTemplateAdmin() {
 
       {/* Template Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedTemplate ? 'Editar Template' : 'Nuevo Template'}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="!max-w-6xl !w-[90vw] !h-[90vh] max-h-[90vh] overflow-hidden p-0">
           <TemplateEditor
             template={selectedTemplate}
             onSave={handleSaveTemplate}
@@ -296,13 +292,20 @@ export default function WhatsAppTemplateAdmin() {
 
       {/* Template Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Vista Previa</DialogTitle>
-          </DialogHeader>
-          {selectedTemplate && (
-            <TemplatePreview template={selectedTemplate} />
-          )}
+        <DialogContent className="!max-w-2xl !w-[80vw] !h-[80vh] max-h-[80vh] overflow-hidden p-0">
+          <div className="w-full h-full flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+              <h2 className="text-xl font-semibold">Vista Previa del Template</h2>
+              <Button variant="ghost" size="sm" onClick={() => setIsPreviewOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden p-6">
+              {selectedTemplate && (
+                <TemplatePreview template={selectedTemplate} />
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

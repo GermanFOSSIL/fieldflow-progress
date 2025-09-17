@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { mockWhatsAppContacts, mockWhatsAppConversations, mockWhatsAppMessages } from '@/lib/mock-data';
+import { useSupabaseConnection } from './useSupabaseConnection';
 import { toast } from 'sonner';
 
 interface WhatsAppContact {
@@ -32,11 +34,16 @@ interface WhatsAppConversation {
 
 export function useWhatsAppPersistence() {
   const queryClient = useQueryClient();
+  const { isConnected } = useSupabaseConnection();
 
   // Fetch contacts
   const { data: contacts, isLoading: contactsLoading } = useQuery({
     queryKey: ['whatsapp-contacts'],
     queryFn: async () => {
+      if (!isConnected) {
+        return mockWhatsAppContacts as WhatsAppContact[];
+      }
+      
       const { data, error } = await supabase
         .from('whatsapp_contacts')
         .select('*')
@@ -52,6 +59,15 @@ export function useWhatsAppPersistence() {
   const { data: conversations, isLoading: conversationsLoading } = useQuery({
     queryKey: ['whatsapp-conversations'],
     queryFn: async () => {
+      if (!isConnected) {
+        // Combinar conversaciones con contactos para mock data
+        return mockWhatsAppConversations.map(conv => ({
+          ...conv,
+          contact: mockWhatsAppContacts.find(c => c.id === conv.contact_id),
+          title: mockWhatsAppContacts.find(c => c.id === conv.contact_id)?.name || 'Contacto'
+        })) as WhatsAppConversation[];
+      }
+      
       const { data, error } = await supabase
         .from('whatsapp_conversations')
         .select(`
@@ -70,6 +86,10 @@ export function useWhatsAppPersistence() {
 
   // Fetch messages for a conversation
   const fetchMessages = async (conversationId: string) => {
+    if (!isConnected) {
+      return mockWhatsAppMessages.filter(msg => msg.conversation_id === conversationId) as WhatsAppMessage[];
+    }
+    
     const { data, error } = await supabase
       .from('whatsapp_messages')
       .select('*')

@@ -138,6 +138,7 @@ export async function insertSeedData() {
         name: 'Soldadura spool 2"',
         unit: 'u',
         boq_qty: 120,
+        executed_qty: 78,
         weight: 0.20
       },
       {
@@ -146,6 +147,7 @@ export async function insertSeedData() {
         name: 'Soportes tubería',
         unit: 'm',
         boq_qty: 300,
+        executed_qty: 195,
         weight: 0.15
       },
       {
@@ -154,6 +156,7 @@ export async function insertSeedData() {
         name: 'Tendido bandeja principal',
         unit: 'm',
         boq_qty: 200,
+        executed_qty: 140,
         weight: 0.25
       },
       {
@@ -162,6 +165,7 @@ export async function insertSeedData() {
         name: 'Tendido cable 6mm2',
         unit: 'm',
         boq_qty: 1000,
+        executed_qty: 650,
         weight: 0.25
       },
       {
@@ -170,15 +174,138 @@ export async function insertSeedData() {
         name: 'Instalación transmisores',
         unit: 'u',
         boq_qty: 40,
+        executed_qty: 28,
+        weight: 0.15
+      },
+      {
+        work_package_id: wps.find(wp => wp.code === 'WP-001')?.id,
+        code: 'A-0003',
+        name: 'Soldadura líneas de 6" Schedule 40',
+        unit: 'jnt',
+        boq_qty: 120,
+        executed_qty: 78,
+        weight: 0.20
+      },
+      {
+        work_package_id: wps.find(wp => wp.code === 'WP-020')?.id,
+        code: 'A-0206',
+        name: 'Instalación transmisores de presión',
+        unit: 'u',
+        boq_qty: 45,
+        executed_qty: 28,
+        weight: 0.15
+      },
+      {
+        work_package_id: wps.find(wp => wp.code === 'WP-001')?.id,
+        code: 'A-0004',
+        name: 'Instalación separador trifásico',
+        unit: 'u',
+        boq_qty: 2,
+        executed_qty: 1,
+        weight: 0.30
+      },
+      {
+        work_package_id: wps.find(wp => wp.code === 'WP-012')?.id,
+        code: 'A-0121',
+        name: 'Tendido cableado eléctrico 480V',
+        unit: 'm',
+        boq_qty: 500,
+        executed_qty: 320,
+        weight: 0.25
+      },
+      {
+        work_package_id: wps.find(wp => wp.code === 'WP-020')?.id,
+        code: 'A-0207',
+        name: 'Instalación válvulas de control',
+        unit: 'u',
+        boq_qty: 25,
+        executed_qty: 18,
         weight: 0.15
       }
     ];
 
-    const { error: activitiesError } = await supabase
+    const { data: insertedActivities, error: activitiesError } = await supabase
       .from('activities')
-      .upsert(activities);
+      .upsert(activities)
+      .select();
 
     if (activitiesError) throw activitiesError;
+
+    // 7. Insertar reportes de ejemplo
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const sampleReports = [
+        {
+          project_id: project.id,
+          user_id: user.id,
+          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Ayer
+          shift: 'morning',
+          status: 'approved',
+          total_activities: 3,
+          total_progress: 12.5,
+          notes: 'Trabajo normal, sin incidencias'
+        },
+        {
+          project_id: project.id,
+          user_id: user.id,
+          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Hace 2 días
+          shift: 'afternoon',
+          status: 'approved',
+          total_activities: 2,
+          total_progress: 8.2,
+          notes: 'Completado según plan'
+        },
+        {
+          project_id: project.id,
+          user_id: user.id,
+          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Hace 3 días
+          shift: 'morning',
+          status: 'submitted',
+          total_activities: 4,
+          total_progress: 15.7,
+          notes: 'Pendiente de aprobación'
+        }
+      ];
+
+      const { error: reportsError } = await supabase
+        .from('progress_reports')
+        .upsert(sampleReports);
+
+      if (reportsError) throw reportsError;
+
+      // 8. Insertar entradas de progreso de ejemplo
+      const progressEntries = [];
+      for (let i = 0; i < 3; i++) {
+        const reportDate = new Date(Date.now() - (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const report = sampleReports[i];
+        
+        if (insertedActivities && insertedActivities.length > 0) {
+          // Crear entradas para algunas actividades
+          const activitiesToInclude = insertedActivities.slice(0, report.total_activities);
+          
+          activitiesToInclude.forEach((activity, index) => {
+            progressEntries.push({
+              activity_id: activity.id,
+              project_id: project.id,
+              user_id: user.id,
+              date: reportDate,
+              shift: report.shift,
+              quantity: Math.floor(Math.random() * 10) + 1,
+              comment: `Progreso en ${activity.name}`,
+              status: report.status
+            });
+          });
+        }
+      }
+
+      if (progressEntries.length > 0) {
+        const { error: entriesError } = await supabase
+          .from('progress_entries')
+          .upsert(progressEntries);
+
+        if (entriesError) throw entriesError;
+      }
+    }
 
     console.log('Datos de prueba insertados correctamente');
     return { success: true };

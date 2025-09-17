@@ -17,10 +17,11 @@ import ImportPlan from "./pages/ImportPlan";
 import Approve from "./pages/Approve";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
-import WhatsAppBusiness from "./pages/WhatsAppBusiness";
+import WhatsApp from "./pages/WhatsApp";
 import AIAssistant from "./pages/AIAssistant";
 import WhatsAppTemplateAdmin from "./pages/WhatsAppTemplateAdmin";
 import DatabaseAdmin from "./pages/DatabaseAdmin";
+import ProjectManagement from "./pages/ProjectManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -97,6 +98,16 @@ const App = () => (
               } 
             />
             <Route 
+              path="/projects" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <ProjectManagement />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/reports" 
               element={
                 <ProtectedRoute>
@@ -121,7 +132,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AuthenticatedLayout>
-                    <WhatsAppBusiness />
+                    <WhatsApp />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 

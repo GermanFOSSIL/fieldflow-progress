@@ -1,8 +1,8 @@
-# WhatsApp Business - Documentación
+# WhatsApp - Documentación
 
 ## 📱 Propósito y Funcionalidad
 
-El módulo **WhatsApp Business** (`/whatsapp`) es el centro de comunicación de la aplicación, permitiendo gestionar conversaciones con trabajadores, enviar templates automatizados y administrar contactos para comunicación masiva.
+El módulo **WhatsApp** (`/whatsapp`) es el centro de comunicación de la aplicación, permitiendo gestionar conversaciones con trabajadores, enviar templates automatizados y administrar contactos para comunicación masiva.
 
 ## 🎯 Características Principales
 
@@ -586,8 +586,8 @@ interface WhatsAppTemplate {
 
 ## 🎯 Funcionalidades Futuras
 
-### Integración WhatsApp Business API
-- Conexión real con WhatsApp Business API
+### Integración WhatsApp API
+- Conexión real con WhatsApp API
 - Webhooks para mensajes entrantes
 - Estados de entrega reales
 - Multimedia (imágenes, documentos)

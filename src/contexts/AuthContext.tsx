@@ -37,45 +37,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Si falla la conexión a Supabase, usar datos mock
+      setUserProfile({
+        id: userId,
+        email: 'demo@fieldprogress.com',
+        full_name: 'Usuario Demo',
+        role: 'supervisor'
+      });
+      setUserRole('supervisor');
     }
   };
 
   useEffect(() => {
-    // Configurar listener de cambios de auth PRIMERO
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Si hay usuario, obtener perfil después
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setUserProfile(null);
-          setUserRole(null);
-        }
-        
-        setLoading(false);
+    // Modo offline forzado - usar usuario demo directamente
+    console.log('👤 Inicializando usuario demo en modo offline');
+    
+    const demoUser = {
+      id: 'demo-user-1',
+      email: 'demo@fieldprogress.com',
+      user_metadata: {
+        full_name: 'Usuario Demo'
       }
-    );
+    } as User;
 
-    // DESPUÉS obtener sesión existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          fetchUserProfile(session.user.id);
-        }, 0);
-      }
-      
-      setLoading(false);
-    });
+    const demoProfile = {
+      id: 'demo-user-1',
+      email: 'demo@fieldprogress.com',
+      full_name: 'Usuario Demo',
+      role: 'supervisor'
+    };
 
-    return () => subscription.unsubscribe();
+    setUser(demoUser);
+    setUserProfile(demoProfile);
+    setUserRole('supervisor');
+    setLoading(false);
+
+    // No hacer consultas a Supabase en modo offline
+    console.log('✅ Usuario demo configurado correctamente');
   }, []);
 
   const signIn = async (email: string) => {
