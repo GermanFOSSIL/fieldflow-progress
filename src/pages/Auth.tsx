@@ -18,6 +18,10 @@ export default function Auth() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Estados para recuperar contraseña
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  
   // Estados para login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -115,6 +119,31 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) return;
+
+    setResetLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/dashboard`
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setMessage("Se ha enviado un email con instrucciones para recuperar tu contraseña.");
+      }
+    } catch (err) {
+      setError("Error al enviar el email de recuperación.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -137,7 +166,7 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="login" className="flex items-center gap-2">
                   <LogIn className="w-4 h-4" />
                   Iniciar Sesión
@@ -145,6 +174,10 @@ export default function Auth() {
                 <TabsTrigger value="signup" className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
                   Registrarse
+                </TabsTrigger>
+                <TabsTrigger value="reset" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Recuperar
                 </TabsTrigger>
               </TabsList>
 
@@ -280,6 +313,33 @@ export default function Auth() {
                     disabled={loading}
                   >
                     {loading ? "Creando cuenta..." : "Crear Cuenta"}
+                  </Button>
+                </form>
+              </TabsContent>
+              <TabsContent value="reset">
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email" className="text-sm font-medium">
+                      Correo electrónico
+                    </Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="tu@empresa.com"
+                      required
+                      disabled={resetLoading}
+                      className="h-10"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Enviando..." : "Enviar Enlace de Recuperación"}
                   </Button>
                 </form>
               </TabsContent>

@@ -26,10 +26,15 @@ export default function ImportPlan() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-        toast.error('Por favor selecciona un archivo CSV válido');
+      const fileName = file.name.toLowerCase();
+      const supportedFormats = ['.csv', '.xer', '.xml', '.mpp'];
+      const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+      
+      if (!isSupported) {
+        toast.error('Formato no soportado. Use CSV, XER, XML o MPP');
         return;
       }
+      
       setSelectedFile(file);
     }
   };
@@ -76,9 +81,13 @@ export default function ImportPlan() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={downloadTemplate}>
+          <Button variant="outline" onClick={() => downloadTemplate('csv')}>
             <Download className="w-4 h-4 mr-2" />
-            Descargar Template
+            Descargar CSV
+          </Button>
+          <Button variant="outline" onClick={() => downloadTemplate('xml')}>
+            <Download className="w-4 h-4 mr-2" />
+            Descargar XML
           </Button>
         </div>
       </div>
@@ -174,8 +183,11 @@ export default function ImportPlan() {
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Formato requerido:</strong> El archivo CSV debe contener las columnas: 
-                project_code, area_name, system_name, activity_code, activity_name, unit, boq_qty, weight
+                <strong>Formatos soportados:</strong> 
+                <br />• CSV: project_code, area_name, system_name, activity_code, activity_name, unit, boq_qty, weight
+                <br />• Primavera P6: Archivos .xer exportados desde P6
+                <br />• Microsoft Project: Archivos .xml exportados desde Project
+                <br />• Nota: Los archivos .mpp requieren conversión a .xml primero
               </AlertDescription>
             </Alert>
           </CardContent>

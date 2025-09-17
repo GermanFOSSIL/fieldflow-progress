@@ -129,6 +129,26 @@ export function useImportPlan() {
 
   // Process file upload
   const processFile = async (file: File): Promise<ImportResult> => {
+    // Check if it's a supported format
+    const fileName = file.name.toLowerCase();
+    const supportedFormats = ['.csv', '.xer', '.xml', '.mpp'];
+    const isSupported = supportedFormats.some(format => fileName.endsWith(format));
+    
+    if (!isSupported) {
+      // Try CSV parsing for backward compatibility
+      return processCSVFile(file);
+    }
+    
+    // Use new parsing service for advanced formats
+    if (fileName.endsWith('.csv')) {
+      return processCSVFile(file);
+    } else {
+      return processAdvancedFile(file);
+    }
+  };
+
+  // Process CSV file (existing functionality)
+  const processCSVFile = async (file: File): Promise<ImportResult> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -157,6 +177,31 @@ export function useImportPlan() {
     });
   };
 
+  // Process advanced file formats
+  const processAdvancedFile = async (file: File): Promise<ImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const { data, error } = await supabase.functions.invoke('parse-project-files', {
+      body: formData
+    });
+    
+    if (error) {
+      throw new Error(`Error parsing file: ${error.message}`);
+    }
+    
+    const result: ImportResult = {
+      totalRows: data.totalRows,
+      validRows: data.validRows,
+      warningRows: data.warningRows,
+      errorRows: data.errorRows,
+      activities: data.activities
+    };
+    
+    setImportResult(result);
+    return result;
+  };
+
   // Import valid activities
   const importValidActivities = async () => {
     if (!importResult) return;
@@ -166,23 +211,53 @@ export function useImportPlan() {
   };
 
   // Download template
-  const downloadTemplate = () => {
-    const template = [
-      'project_code,area_name,system_name,activity_code,activity_name,unit,boq_qty,weight',
-      'FP01,Área 1,Sistema Proceso,A-0001,Soldadura spool 2",u,120,0.20',
-      'FP01,Área 1,Sistema Eléctrico,A-0101,Tendido bandeja principal,m,200,0.25',
-      'FP01,Área 2,Sistema Instrumentos,A-0205,Instalación transmisores,u,40,0.15'
-    ].join('\n');
+  const downloadTemplate = (format: 'csv' | 'xml' = 'csv') => {
+    if (format === 'csv') {
+      const template = [
+        'project_code,area_name,system_name,activity_code,activity_name,unit,boq_qty,weight',
+        'FP01,Área 1,Sistema Proceso,A-0001,Soldadura spool 2",u,120,0.20',
+        'FP01,Área 1,Sistema Eléctrico,A-0101,Tendido bandeja principal,m,200,0.25',
+        'FP01,Área 2,Sistema Instrumentos,A-0205,Instalación transmisores,u,40,0.15'
+      ].join('\n');
 
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'activities_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([template], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'activities_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (format === 'xml') {
+      const xmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <Name>Soldadura spool 2"</Name>
+      <Duration>PT96H0M0S</Duration>
+      <Work>PT120H0M0S</Work>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <Name>Tendido bandeja principal</Name>
+      <Duration>PT160H0M0S</Duration>
+      <Work>PT200H0M0S</Work>
+    </Task>
+  </Tasks>
+</Project>`;
+
+      const blob = new Blob([xmlTemplate], { type: 'text/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'project_template.xml';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   return {

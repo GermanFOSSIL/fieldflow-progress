@@ -8,9 +8,10 @@ interface AuthContextType {
   userRole: string | null;
   userProfile: any | null;
   loading: boolean;
-  signIn: (email: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,41 +50,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Modo offline forzado - usar usuario demo directamente
-    console.log('👤 Inicializando usuario demo en modo offline');
-    
-    const demoUser = {
-      id: 'demo-user-1',
-      email: 'demo@fieldprogress.com',
-      user_metadata: {
-        full_name: 'Usuario Demo'
+    // Set up authentication state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('🔐 Auth state changed:', event);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Fetch user profile if user is authenticated
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUserProfile(null);
+          setUserRole(null);
+        }
+        
+        setLoading(false);
       }
-    } as User;
+    );
 
-    const demoProfile = {
-      id: 'demo-user-1',
-      email: 'demo@fieldprogress.com',
-      full_name: 'Usuario Demo',
-      role: 'supervisor'
-    };
+    // Check for initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+      
+      setLoading(false);
+    });
 
-    setUser(demoUser);
-    setUserProfile(demoProfile);
-    setUserRole('supervisor');
-    setLoading(false);
-
-    // No hacer consultas a Supabase en modo offline
-    console.log('✅ Usuario demo configurado correctamente');
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
-    
-    const { error } = await supabase.auth.signInWithOtp({
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
+      password
+    });
+    
+    return { error };
+  };
+
+  const resetPassword = async (email: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
     });
     
     return { error };
@@ -126,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

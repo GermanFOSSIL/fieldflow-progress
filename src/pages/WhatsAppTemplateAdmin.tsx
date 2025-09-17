@@ -281,7 +281,7 @@ export default function WhatsAppTemplateAdmin() {
 
       {/* Template Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="!max-w-6xl !w-[90vw] !h-[90vh] max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh] overflow-hidden p-0">
           <TemplateEditor
             template={selectedTemplate}
             onSave={handleSaveTemplate}
@@ -292,15 +292,15 @@ export default function WhatsAppTemplateAdmin() {
 
       {/* Template Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="!max-w-2xl !w-[80vw] !h-[80vh] max-h-[80vh] overflow-hidden p-0">
+        <DialogContent className="max-w-lg w-[90vw] max-h-[80vh] overflow-hidden p-0">
           <div className="w-full h-full flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-              <h2 className="text-xl font-semibold">Vista Previa del Template</h2>
+            <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
+              <h2 className="text-lg font-semibold">Vista Previa del Template</h2>
               <Button variant="ghost" size="sm" onClick={() => setIsPreviewOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex-1 overflow-hidden p-6">
+            <div className="flex-1 overflow-auto p-4">
               {selectedTemplate && (
                 <TemplatePreview template={selectedTemplate} />
               )}
