@@ -157,16 +157,18 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-          <h2 className="text-xl font-semibold">
-            {template ? 'Editar Template' : 'Nuevo Template'}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+      <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl max-h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg">
+        <div className="h-full flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+            <h2 className="text-xl font-semibold">
+              {template ? 'Editar Template' : 'Nuevo Template'}
+            </h2>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
@@ -309,16 +311,18 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
       </Tabs>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0 mt-auto">
-        <Button variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" />
-            Guardar Template
-        </Button>
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0 mt-auto">
+            <Button variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} className="gap-2">
+              <Save className="h-4 w-4" />
+              Guardar Template
+            </Button>
+          </div>
         </div>
+      </div>
     </div>
   );
 }

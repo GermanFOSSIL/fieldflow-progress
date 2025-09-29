@@ -6,13 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ReportData {
-  startDate: string;
-  endDate: string;
-  projectId?: string;
-  reportType?: string;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -20,470 +13,327 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Starting PDF report generation...');
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Parse request data
-    const { startDate, endDate, projectId, reportType = 'progress' }: ReportData = await req.json();
+    const { projectId, reportType = 'progress', startDate, endDate } = await req.json();
+    console.log('📊 Report parameters:', { projectId, reportType, startDate, endDate });
 
-    console.log('🔍 Generating PDF report with params:', { startDate, endDate, projectId, reportType });
+    // Get project information
+    const { data: project } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
 
-    // Get project data
-    let projectData = null;
-    if (projectId) {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          activities:activities(
-            id, name, code, unit, boq_qty, weight,
-            progress:activity_progress_agg(qty_accum, pct)
-          )
-        `)
-        .eq('id', projectId)
-        .single();
-      
-      if (error) {
-        console.error('❌ Error fetching project:', error);
-        throw new Error(`Error fetching project: ${error.message}`);
-      }
-      projectData = data;
+    if (!project) {
+      throw new Error('Proyecto no encontrado');
     }
 
-    // Get daily reports in date range
-    const reportsQuery = supabase
+    // Get activities data
+    const { data: activities } = await supabase
+      .from('activities')
+      .select(`
+        *,
+        work_packages(name, contractor),
+        activity_progress_agg(qty_accum, pct)
+      `);
+
+    // Get daily reports data
+    const { data: dailyReports } = await supabase
       .from('daily_reports')
       .select(`
         *,
-        reporter:users!reporter_id(full_name),
-        progress_entries:progress_entries(
-          id, qty_today, comment,
-          activity:activities(name, code, unit)
-        )
+        progress_entries(
+          qty_today,
+          activities(name, code, unit, boq_qty)
+        ),
+        users:reporter_id(full_name, email)
       `)
-      .gte('report_date', startDate)
-      .lte('report_date', endDate)
       .eq('status', 'approved')
-      .order('report_date', { ascending: false });
+      .gte('report_date', startDate || '2024-01-01')
+      .lte('report_date', endDate || new Date().toISOString().split('T')[0]);
 
-    if (projectId) {
-      reportsQuery.eq('project_id', projectId);
-    }
-
-    const { data: reports, error: reportsError } = await reportsQuery;
+    // Calculate summary metrics
+    const totalActivities = activities?.length || 0;
+    const completedActivities = activities?.filter(a => 
+      a.activity_progress_agg?.some((agg: any) => agg.pct >= 1)
+    ).length || 0;
     
-    if (reportsError) {
-      console.error('❌ Error fetching reports:', reportsError);
-      throw new Error(`Error fetching reports: ${reportsError.message}`);
-    }
+    const totalProgress = activities?.reduce((sum, a) => {
+      const progress = a.activity_progress_agg?.[0]?.qty_accum || 0;
+      return sum + progress;
+    }, 0) || 0;
 
-    // Generate modern HTML content
-    const htmlContent = generateModernHTML({
-      projectData,
-      reports: reports || [],
-      startDate,
-      endDate,
-      reportType
-    });
+    const totalBOQ = activities?.reduce((sum, a) => sum + a.boq_qty, 0) || 1;
+    const overallProgress = (totalProgress / totalBOQ) * 100;
 
-    // Use Puppeteer to generate PDF
-    const pdfBytes = await generatePDF(htmlContent);
+    // Generate HTML content
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Progreso - ${project.name}</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                padding: 20px; 
+                line-height: 1.6;
+                color: #333;
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 30px; 
+                border-bottom: 3px solid #2563eb;
+                padding-bottom: 20px;
+            }
+            .header h1 { 
+                color: #2563eb; 
+                margin: 0;
+                font-size: 28px;
+                font-weight: bold;
+            }
+            .header p { 
+                color: #666; 
+                margin: 5px 0;
+                font-size: 14px;
+            }
+            .summary-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin: 30px 0;
+            }
+            .summary-card {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 20px;
+                text-align: center;
+            }
+            .summary-card h3 {
+                margin: 0 0 10px 0;
+                color: #2563eb;
+                font-size: 24px;
+                font-weight: bold;
+            }
+            .summary-card p {
+                margin: 0;
+                color: #64748b;
+                font-size: 14px;
+            }
+            .progress-bar {
+                width: 100%;
+                height: 20px;
+                background-color: #e2e8f0;
+                border-radius: 10px;
+                overflow: hidden;
+                margin: 20px 0;
+            }
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #10b981, #059669);
+                width: ${Math.min(overallProgress, 100)}%;
+                transition: width 0.3s ease;
+            }
+            .activities-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 30px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .activities-table th,
+            .activities-table td {
+                border: 1px solid #e2e8f0;
+                padding: 12px 8px;
+                text-align: left;
+                font-size: 12px;
+            }
+            .activities-table th {
+                background-color: #2563eb;
+                color: white;
+                font-weight: bold;
+            }
+            .activities-table tr:nth-child(even) {
+                background-color: #f8fafc;
+            }
+            .reports-section {
+                margin: 30px 0;
+                page-break-before: always;
+            }
+            .section-title {
+                color: #2563eb;
+                font-size: 20px;
+                font-weight: bold;
+                margin: 30px 0 15px 0;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #e2e8f0;
+            }
+            .report-item {
+                background: #f8fafc;
+                border-left: 4px solid #2563eb;
+                margin: 15px 0;
+                padding: 15px;
+                border-radius: 0 8px 8px 0;
+            }
+            .report-header {
+                font-weight: bold;
+                color: #2563eb;
+                margin-bottom: 8px;
+            }
+            .report-details {
+                color: #64748b;
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            .footer {
+                margin-top: 40px;
+                text-align: center;
+                color: #64748b;
+                font-size: 12px;
+                border-top: 1px solid #e2e8f0;
+                padding-top: 20px;
+            }
+            @media print {
+                body { padding: 10px; }
+                .page-break { page-break-before: always; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Reporte de Progreso de Proyecto</h1>
+            <p><strong>Proyecto:</strong> ${project.name} (${project.code})</p>
+            <p><strong>Periodo:</strong> ${startDate || 'Inicio'} - ${endDate || 'Actual'}</p>
+            <p><strong>Generado:</strong> ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}</p>
+        </div>
 
-    // Return PDF response
-    return new Response(pdfBytes, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="reporte-${reportType}-${startDate}-${endDate}.pdf"`,
-      },
+        <h2 class="section-title">📊 Resumen Ejecutivo</h2>
+        
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>${totalActivities}</h3>
+                <p>Actividades Totales</p>
+            </div>
+            <div class="summary-card">
+                <h3>${completedActivities}</h3>
+                <p>Actividades Completadas</p>
+            </div>
+            <div class="summary-card">
+                <h3>${overallProgress.toFixed(1)}%</h3>
+                <p>Progreso General</p>
+            </div>
+            <div class="summary-card">
+                <h3>${dailyReports?.length || 0}</h3>
+                <p>Reportes Aprobados</p>
+            </div>
+        </div>
+
+        <div>
+            <h3>Progreso General del Proyecto</h3>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <p style="text-align: center; color: #64748b; margin-top: 10px;">
+                ${overallProgress.toFixed(1)}% completado
+            </p>
+        </div>
+
+        <h2 class="section-title">📋 Detalle de Actividades</h2>
+        
+        <table class="activities-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Actividad</th>
+                    <th>Unidad</th>
+                    <th>Cantidad BOQ</th>
+                    <th>Ejecutado</th>
+                    <th>% Avance</th>
+                    <th>Paquete</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${activities?.map(activity => {
+                  const progress = activity.activity_progress_agg?.[0] || { qty_accum: 0, pct: 0 };
+                  return `
+                    <tr>
+                        <td>${activity.code}</td>
+                        <td>${activity.name}</td>
+                        <td>${activity.unit}</td>
+                        <td>${activity.boq_qty.toFixed(2)}</td>
+                        <td>${progress.qty_accum.toFixed(2)}</td>
+                        <td>${(progress.pct * 100).toFixed(1)}%</td>
+                        <td>${activity.work_packages?.name || 'N/A'}</td>
+                    </tr>
+                  `;
+                }).join('') || '<tr><td colspan="7" style="text-align: center;">No hay actividades disponibles</td></tr>'}
+            </tbody>
+        </table>
+
+        <div class="page-break"></div>
+        <div class="reports-section">
+            <h2 class="section-title">📝 Reportes Diarios Aprobados</h2>
+            
+            ${dailyReports?.slice(0, 10).map(report => `
+                <div class="report-item">
+                    <div class="report-header">
+                        Reporte del ${new Date(report.report_date).toLocaleDateString('es-ES')} - 
+                        Turno: ${report.shift}
+                    </div>
+                    <div class="report-details">
+                        <strong>Reportado por:</strong> ${report.users?.full_name || report.users?.email || 'N/A'}<br>
+                        <strong>Actividades reportadas:</strong> ${report.progress_entries?.length || 0}<br>
+                        <strong>Cantidad total:</strong> ${report.progress_entries?.reduce((sum: number, pe: any) => sum + pe.qty_today, 0)?.toFixed(2) || '0.00'}<br>
+                        ${report.notes ? `<strong>Observaciones:</strong> ${report.notes}` : ''}
+                    </div>
+                </div>
+            `).join('') || '<p>No hay reportes aprobados en el periodo seleccionado.</p>'}
+            
+            ${(dailyReports?.length || 0) > 10 ? `<p style="color: #64748b; font-style: italic; margin-top: 20px;">Se muestran los primeros 10 reportes de ${dailyReports?.length} totales.</p>` : ''}
+        </div>
+
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} FieldProgress - Sistema de Gestión de Proyectos de Construcción</p>
+            <p>Reporte generado automáticamente el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}</p>
+        </div>
+    </body>
+    </html>
+    `;
+
+    console.log('✅ PDF HTML generated successfully');
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      html: htmlContent,
+      summary: {
+        projectName: project.name,
+        totalActivities,
+        completedActivities,
+        overallProgress: overallProgress.toFixed(1),
+        reportsCount: dailyReports?.length || 0
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('❌ Error generating PDF:', error);
+    console.error('❌ Error generating PDF report:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Error generating PDF report',
-        details: error.message 
+        details: (error as Error).message 
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
 });
-
-function generateModernHTML(data: any): string {
-  const { projectData, reports, startDate, endDate, reportType } = data;
-  
-  // Calculate summary statistics
-  const totalReports = reports.length;
-  const totalActivities = reports.reduce((sum: number, report: any) => 
-    sum + (report.progress_entries?.length || 0), 0
-  );
-  const totalProgress = reports.reduce((sum: number, report: any) => 
-    sum + (report.progress_entries?.reduce((acc: number, entry: any) => acc + (entry.qty_today || 0), 0) || 0), 0
-  );
-
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  return `
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Reporte de Avance - FieldProgress</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: 'Arial', sans-serif;
-          line-height: 1.6;
-          color: #333;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          background: white;
-          min-height: 100vh;
-        }
-        
-        .header {
-          background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-          color: white;
-          padding: 2rem;
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .header::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          right: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        }
-        
-        .header-content {
-          position: relative;
-          z-index: 2;
-        }
-        
-        .logo {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-        
-        .logo-icon {
-          width: 48px;
-          height: 48px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-right: 1rem;
-          font-size: 24px;
-          font-weight: bold;
-        }
-        
-        .header h1 {
-          font-size: 2.5rem;
-          font-weight: 700;
-          margin-bottom: 0.5rem;
-        }
-        
-        .header-subtitle {
-          font-size: 1.2rem;
-          opacity: 0.9;
-          margin-bottom: 1rem;
-        }
-        
-        .header-meta {
-          display: flex;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 1rem;
-          font-size: 0.95rem;
-          opacity: 0.9;
-        }
-        
-        .summary-cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-          padding: 2rem;
-          background: #f8fafc;
-        }
-        
-        .summary-card {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 12px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-          border-left: 4px solid #3b82f6;
-          transition: transform 0.2s;
-        }
-        
-        .summary-card:hover {
-          transform: translateY(-2px);
-        }
-        
-        .summary-card h3 {
-          font-size: 0.875rem;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.5rem;
-        }
-        
-        .summary-card .value {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 0.25rem;
-        }
-        
-        .summary-card .label {
-          font-size: 0.875rem;
-          color: #64748b;
-        }
-        
-        .content {
-          padding: 2rem;
-        }
-        
-        .section {
-          margin-bottom: 2rem;
-        }
-        
-        .section h2 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #1e293b;
-          margin-bottom: 1rem;
-          padding-bottom: 0.5rem;
-          border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .reports-table {
-          width: 100%;
-          border-collapse: collapse;
-          background: white;
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .reports-table th {
-          background: #f1f5f9;
-          padding: 1rem;
-          text-align: left;
-          font-weight: 600;
-          color: #475569;
-          font-size: 0.875rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        
-        .reports-table td {
-          padding: 1rem;
-          border-top: 1px solid #e2e8f0;
-          vertical-align: top;
-        }
-        
-        .reports-table tr:hover {
-          background: #f8fafc;
-        }
-        
-        .status-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.25rem 0.75rem;
-          border-radius: 9999px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        
-        .status-approved {
-          background: #dcfce7;
-          color: #166534;
-        }
-        
-        .progress-bar {
-          width: 100%;
-          height: 8px;
-          background: #e2e8f0;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-          transition: width 0.3s ease;
-        }
-        
-        .footer {
-          background: #f8fafc;
-          padding: 2rem;
-          text-align: center;
-          border-top: 1px solid #e2e8f0;
-          font-size: 0.875rem;
-          color: #64748b;
-        }
-        
-        .chart-container {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          margin-bottom: 2rem;
-        }
-        
-        @media print {
-          body { background: white !important; }
-          .summary-card:hover { transform: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <!-- Header -->
-        <div class="header">
-          <div class="header-content">
-            <div class="logo">
-              <div class="logo-icon">FP</div>
-              <div>
-                <h1>FieldProgress</h1>
-                <div class="header-subtitle">Reporte de Avance de Obra</div>
-              </div>
-            </div>
-            <div class="header-meta">
-              <div>
-                <strong>Período:</strong> ${startDate} - ${endDate}
-              </div>
-              <div>
-                <strong>Generado:</strong> ${currentDate}
-              </div>
-              ${projectData ? `<div><strong>Proyecto:</strong> ${projectData.name}</div>` : ''}
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="summary-cards">
-          <div class="summary-card">
-            <h3>Total Reportes</h3>
-            <div class="value">${totalReports}</div>
-            <div class="label">Reportes Aprobados</div>
-          </div>
-          <div class="summary-card">
-            <h3>Actividades</h3>
-            <div class="value">${totalActivities}</div>
-            <div class="label">Actividades Reportadas</div>
-          </div>
-          <div class="summary-card">
-            <h3>Avance Total</h3>
-            <div class="value">${totalProgress.toFixed(1)}</div>
-            <div class="label">Unidades Ejecutadas</div>
-          </div>
-          <div class="summary-card">
-            <h3>Eficiencia</h3>
-            <div class="value">${totalReports > 0 ? (totalActivities / totalReports).toFixed(1) : '0'}</div>
-            <div class="label">Actividades por Reporte</div>
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-          <div class="section">
-            <h2>Detalle de Reportes</h2>
-            <table class="reports-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Reportero</th>
-                  <th>Actividades</th>
-                  <th>Avance</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${reports.map((report: any) => `
-                  <tr>
-                    <td><strong>${new Date(report.report_date).toLocaleDateString('es-ES')}</strong></td>
-                    <td>${report.reporter?.full_name || 'N/A'}</td>
-                    <td>
-                      ${(report.progress_entries || []).map((entry: any) => `
-                        <div style="margin-bottom: 0.5rem;">
-                          <strong>${entry.activity?.code || 'N/A'}</strong> - ${entry.activity?.name || 'N/A'}
-                          <br>
-                          <small>Cantidad: ${entry.qty_today || 0} ${entry.activity?.unit || ''}</small>
-                        </div>
-                      `).join('')}
-                    </td>
-                    <td>
-                      <strong>${(report.progress_entries || []).reduce((sum: number, entry: any) => sum + (entry.qty_today || 0), 0)}</strong>
-                      <div style="margin-top: 0.5rem;">
-                        <div class="progress-bar">
-                          <div class="progress-fill" style="width: ${Math.min(100, ((report.progress_entries || []).reduce((sum: number, entry: any) => sum + (entry.qty_today || 0), 0) / 100) * 100)}%"></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="status-badge status-approved">Aprobado</span>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-          <div>
-            <strong>FieldProgress</strong> - Sistema de Gestión de Proyectos de Construcción
-          </div>
-          <div style="margin-top: 0.5rem;">
-            Reporte generado automáticamente el ${currentDate}
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-async function generatePDF(htmlContent: string): Promise<Uint8Array> {
-  // For now, return a simple PDF-like response
-  // In a real implementation, you would use Puppeteer or another PDF generation library
-  
-  // Create a basic PDF buffer (this is a placeholder)
-  const encoder = new TextEncoder();
-  const pdfHeader = "%PDF-1.4\n";
-  const pdfContent = htmlContent.substring(0, 1000); // Truncated for demo
-  const pdfFooter = "\n%%EOF";
-  
-  const fullContent = pdfHeader + pdfContent + pdfFooter;
-  return encoder.encode(fullContent);
-}

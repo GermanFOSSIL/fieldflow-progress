@@ -26,11 +26,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Función para obtener el perfil del usuario
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Try users table first
+      let { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      // If not found in users, try profiles table
+      if (error || !data) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (!profileError && profileData) {
+          setUserProfile(profileData);
+          setUserRole(profileData.role);
+          return;
+        }
+      }
       
       if (!error && data) {
         setUserProfile(data);
@@ -38,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      // Si falla la conexión a Supabase, usar datos mock
+      // Fallback to demo user
       setUserProfile({
         id: userId,
         email: 'demo@fieldprogress.com',

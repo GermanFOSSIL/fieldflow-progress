@@ -24,6 +24,7 @@ import DatabaseAdmin from "./pages/DatabaseAdmin";
 import ProjectManagement from "./pages/ProjectManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -163,6 +164,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AuthenticatedLayout>
                     <DatabaseAdmin />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/executive" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <ExecutiveDashboard />
+                  </AuthenticatedLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <AuthenticatedLayout>
+                    <Settings />
                   </AuthenticatedLayout>
                 </ProtectedRoute>
               } 
