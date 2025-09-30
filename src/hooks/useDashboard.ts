@@ -170,13 +170,7 @@ export function useDashboard() {
         // Get recent reports
         const { data: reports, error: reportsError } = await supabase
           .from('daily_reports')
-          .select(`
-            id,
-            status,
-            created_at,
-            reporter:users!daily_reports_reporter_id_fkey(full_name),
-            project:projects(name)
-          `)
+          .select('id, status, created_at, reporter_id, project_id')
           .order('created_at', { ascending: false })
           .limit(10);
         
@@ -186,10 +180,10 @@ export function useDashboard() {
           id: report.id,
           type: report.status === 'submitted' ? 'report' as const : 'approval' as const,
           title: report.status === 'submitted' ? 'Nuevo Reporte Enviado' : 'Reporte Aprobado',
-          description: `Reporte del proyecto ${report.project?.name || 'N/A'}`,
-          user_name: report.reporter?.full_name || 'Usuario',
+          description: `Reporte del proyecto`,
+          user_name: 'Usuario',
           timestamp: report.created_at,
-          project_name: report.project?.name || 'Proyecto'
+          project_name: 'Proyecto'
         })) || [];
 
         return activities;

@@ -62,9 +62,12 @@ export function useWhatsAppPersistence() {
       if (!isConnected) {
         // Combinar conversaciones con contactos para mock data
         return mockWhatsAppConversations.map(conv => ({
-          ...conv,
-          contact: mockWhatsAppContacts.find(c => c.id === conv.contact_id),
-          title: mockWhatsAppContacts.find(c => c.id === conv.contact_id)?.name || 'Contacto'
+          id: conv.id,
+          contact_id: conv.contact_id,
+          project_id: conv.project_id,
+          title: mockWhatsAppContacts.find(c => c.id === conv.contact_id)?.name || 'Contacto',
+          is_active: true,
+          contact: mockWhatsAppContacts.find(c => c.id === conv.contact_id)
         })) as WhatsAppConversation[];
       }
       
@@ -80,14 +83,38 @@ export function useWhatsAppPersistence() {
         .order('updated_at', { ascending: false });
       
       if (error) throw error;
-      return data as WhatsAppConversation[];
+      // Fetch contact info separately
+      const conversationsWithContacts = await Promise.all(
+        (data || []).map(async (conv) => {
+          const { data: contact } = await supabase
+            .from('whatsapp_contacts')
+            .select('*')
+            .eq('id', conv.contact_id)
+            .maybeSingle();
+          
+          return {
+            ...conv,
+            contact: contact || undefined
+          };
+        })
+      );
+      
+      return conversationsWithContacts as WhatsAppConversation[];
     }
   });
 
   // Fetch messages for a conversation
   const fetchMessages = async (conversationId: string) => {
     if (!isConnected) {
-      return mockWhatsAppMessages.filter(msg => msg.conversation_id === conversationId) as WhatsAppMessage[];
+      return mockWhatsAppMessages.filter(msg => msg.conversation_id === conversationId).map(msg => ({
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        sender_type: (msg.direction === 'inbound' ? 'user' : 'bot') as 'user' | 'bot',
+        message_text: msg.content,
+        message_type: msg.message_type || 'text',
+        created_at: msg.timestamp,
+        template_data: undefined
+      })) as WhatsAppMessage[];
     }
     
     const { data, error } = await supabase
@@ -97,7 +124,19 @@ export function useWhatsAppPersistence() {
       .order('created_at', { ascending: true });
     
     if (error) throw error;
-    return data as WhatsAppMessage[];
+    
+    // Map database fields to interface
+    const messages: WhatsAppMessage[] = (data || []).map(msg => ({
+      id: msg.id,
+      conversation_id: msg.conversation_id,
+      sender_type: (msg.sender_type === 'user' || msg.sender_type === 'bot') ? msg.sender_type : 'bot',
+      message_text: msg.message_text,
+      message_type: msg.message_type || 'text',
+      created_at: msg.created_at,
+      template_data: msg.template_data
+    })) as WhatsAppMessage[];
+    
+    return messages;
   };
 
   // Save message mutation

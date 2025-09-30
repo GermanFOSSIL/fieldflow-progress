@@ -112,7 +112,7 @@ export default function Reports() {
                   <TrendingUp className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{projectSummary.completion_percentage.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold">{projectSummary.avg_progress.toFixed(1)}%</p>
                   <p className="text-xs text-muted-foreground">Progreso Total</p>
                 </div>
               </div>
@@ -126,8 +126,8 @@ export default function Reports() {
                   <Calendar className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{projectSummary.average_daily_progress.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">Promedio Diario</p>
+                  <p className="text-2xl font-bold">{projectSummary.total_progress}</p>
+                  <p className="text-xs text-muted-foreground">Total Ejecutado</p>
                 </div>
               </div>
             </CardContent>
@@ -219,9 +219,9 @@ export default function Reports() {
                     <TableBody>
                       {historicalReports.map((report) => (
                         <TableRow key={report.id}>
-                          <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(report.report_date).toLocaleDateString()}</TableCell>
                           <TableCell className="capitalize">{report.shift}</TableCell>
-                          <TableCell>{report.reporter?.full_name || report.reporter?.email}</TableCell>
+                          <TableCell>{report.reporter_name || 'Usuario'}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={
@@ -293,17 +293,17 @@ export default function Reports() {
                           </TableCell>
                           <TableCell>{activity.unit}</TableCell>
                           <TableCell>{activity.boq_qty}</TableCell>
-                          <TableCell>{activity.total_executed}</TableCell>
+                          <TableCell>{activity.qty_accum}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-primary h-2 rounded-full" 
-                                  style={{ width: `${activity.progress_percentage}%` }}
+                                  style={{ width: `${Math.min(activity.pct * 100, 100)}%` }}
                                 />
                               </div>
                               <span className="text-sm text-muted-foreground">
-                                {activity.progress_percentage.toFixed(1)}%
+                                {(activity.pct * 100).toFixed(1)}%
                               </span>
                             </div>
                           </TableCell>
@@ -406,12 +406,12 @@ export default function Reports() {
                           <p className="text-2xl font-bold">{projectSummary.completed_activities}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Progreso Total</p>
-                          <p className="text-2xl font-bold">{projectSummary.completion_percentage.toFixed(1)}%</p>
+                          <p className="text-sm text-muted-foreground">Progreso Promedio</p>
+                          <p className="text-2xl font-bold">{projectSummary.avg_progress.toFixed(1)}%</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Progreso Promedio Diario</p>
-                          <p className="text-2xl font-bold">{projectSummary.average_daily_progress.toFixed(1)}</p>
+                          <p className="text-sm text-muted-foreground">Total Ejecutado</p>
+                          <p className="text-2xl font-bold">{projectSummary.total_progress}</p>
                         </div>
                       </div>
                     </div>

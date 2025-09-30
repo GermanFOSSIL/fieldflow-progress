@@ -53,7 +53,6 @@ export function useApprove(projectId?: string) {
         .from('daily_reports')
         .select(`
           *,
-          reporter:users!daily_reports_reporter_id_fkey(id, full_name),
           entries:progress_entries(
             *,
             activity:activities(id, code, name, unit, boq_qty)
@@ -68,7 +67,23 @@ export function useApprove(projectId?: string) {
         return [];
       }
       
-      return data as DailyReport[];
+      // Fetch reporter info separately
+      const reportsWithReporters = await Promise.all(
+        (data || []).map(async (report) => {
+          const { data: user } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .eq('id', report.reporter_id)
+            .single();
+          
+          return {
+            ...report,
+            reporter: user || undefined
+          };
+        })
+      );
+      
+      return reportsWithReporters as DailyReport[];
     },
     enabled: !!projectId && isConnected
   });
@@ -81,10 +96,7 @@ export function useApprove(projectId?: string) {
       
       const { data, error } = await supabase
         .from('daily_reports')
-        .select(`
-          *,
-          reporter:users!daily_reports_reporter_id_fkey(id, full_name)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       
@@ -93,7 +105,23 @@ export function useApprove(projectId?: string) {
         return [];
       }
       
-      return data as DailyReport[];
+      // Fetch reporter info separately
+      const reportsWithReporters = await Promise.all(
+        (data || []).map(async (report) => {
+          const { data: user } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .eq('id', report.reporter_id)
+            .maybeSingle();
+          
+          return {
+            ...report,
+            reporter: user || undefined
+          };
+        })
+      );
+      
+      return reportsWithReporters as DailyReport[];
     },
     enabled: !!projectId && isConnected
   });

@@ -195,18 +195,15 @@ export default function Approve() {
                         <div className="flex items-center justify-between">
                           <div>
                             <CardTitle className="text-lg">
-                              Reporte del {new Date(report.date).toLocaleDateString()}
+                              Reporte del {new Date(report.report_date).toLocaleDateString()}
                             </CardTitle>
                             <CardDescription>
-                              Turno: {report.shift} | Reportero: {report.reporter?.full_name || report.reporter?.email}
+                              Turno: {report.shift} | Reportero: {report.reporter?.full_name || 'Usuario'}
                             </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary">
-                              {report.total_activities} actividades
-                            </Badge>
-                            <Badge variant="outline">
-                              {report.total_progress} progreso
+                              {report.entries?.length || 0} actividades
                             </Badge>
                           </div>
                         </div>
@@ -230,7 +227,7 @@ export default function Approve() {
                                   <div key={entry.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
                                     <span className="text-sm font-medium">{entry.activity?.code}</span>
                                     <span className="text-sm text-muted-foreground">
-                                      {entry.quantity} {entry.activity?.unit}
+                                      {entry.qty_today} {entry.activity?.unit}
                                     </span>
                                   </div>
                                 ))}
@@ -313,11 +310,11 @@ export default function Approve() {
                     <TableBody>
                       {allReports.map((report) => (
                         <TableRow key={report.id}>
-                          <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(report.report_date).toLocaleDateString()}</TableCell>
                           <TableCell className="capitalize">{report.shift}</TableCell>
-                          <TableCell>{report.reporter?.full_name || report.reporter?.email}</TableCell>
-                          <TableCell>{report.total_activities}</TableCell>
-                          <TableCell>{report.total_progress}</TableCell>
+                          <TableCell>{report.reporter?.full_name || 'Usuario'}</TableCell>
+                          <TableCell>{report.entries?.length || 0}</TableCell>
+                          <TableCell>-</TableCell>
                           <TableCell>
                             <Badge 
                               variant={

@@ -7,12 +7,10 @@ import { toast } from 'sonner';
 
 interface ReportData {
   id: string;
-  date: string;
-  shift: 'morning' | 'afternoon' | 'night';
-  reporter: string;
-  status: 'approved' | 'rejected' | 'submitted';
-  total_activities: number;
-  total_progress: number;
+  report_date: string;
+  shift: 'day' | 'night';
+  reporter_name?: string;
+  status: 'approved' | 'rejected' | 'submitted' | 'draft';
   notes?: string;
   created_at: string;
 }
@@ -23,8 +21,8 @@ interface ActivityProgress {
   activity_name: string;
   unit: string;
   boq_qty: number;
-  total_executed: number;
-  progress_percentage: number;
+  qty_accum: number;
+  pct: number;
   last_updated: string;
 }
 
@@ -32,14 +30,13 @@ interface ProjectSummary {
   total_activities: number;
   completed_activities: number;
   total_progress: number;
-  average_daily_progress: number;
-  completion_percentage: number;
+  avg_progress: number;
 }
 
 export function useReports(projectId?: string) {
   const { isConnected } = useSupabaseConnection();
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
 
@@ -51,25 +48,45 @@ export function useReports(projectId?: string) {
       
       if (!isConnected) {
         return mockProgressReports.filter(report => 
-          report.project_id === projectId &&
-          report.date >= dateRange.startDate &&
-          report.date <= dateRange.endDate
-        ) as ReportData[];
+          report.project_id === projectId
+        ).map(r => ({
+          id: r.id,
+          report_date: r.date,
+          shift: r.shift as 'day' | 'night',
+          reporter_name: 'Mock User',
+          status: r.status as any,
+          notes: r.notes,
+          created_at: r.created_at
+        }));
       }
       
       const { data, error } = await supabase
-        .from('progress_reports')
-        .select(`
-          *,
-          reporter:users(email, full_name)
-        `)
+        .from('daily_reports')
+        .select('*')
         .eq('project_id', projectId)
-        .gte('date', dateRange.startDate)
-        .lte('date', dateRange.endDate)
-        .order('date', { ascending: false });
+        .gte('report_date', dateRange.startDate)
+        .lte('report_date', dateRange.endDate)
+        .order('report_date', { ascending: false });
       
       if (error) throw error;
-      return data as ReportData[];
+
+      // Fetch reporter names
+      const reportsWithNames = await Promise.all(
+        (data || []).map(async (report) => {
+          const { data: user } = await supabase
+            .from('users')
+            .select('full_name')
+            .eq('id', report.reporter_id)
+            .maybeSingle();
+          
+          return {
+            ...report,
+            reporter_name: user?.full_name || 'Usuario'
+          };
+        })
+      );
+
+      return reportsWithNames as ReportData[];
     },
     enabled: !!projectId
   });
@@ -89,30 +106,39 @@ export function useReports(projectId?: string) {
           activity_name: activity.name,
           unit: activity.unit,
           boq_qty: activity.boq_qty,
-          total_executed: activity.executed_qty,
-          progress_percentage: activity.progress_percentage,
+          qty_accum: activity.executed_qty,
+          pct: activity.progress_percentage / 100,
           last_updated: activity.updated_at
-        })) as ActivityProgress[];
+        }));
       }
       
-      const { data, error } = await supabase
+      const { data: activities, error: activitiesError } = await supabase
         .from('activities')
-        .select(`
-          id,
-          code,
-          name,
-          unit,
-          boq_qty,
-          executed_qty,
-          progress_percentage,
-          updated_at
-        `)
-        .eq('project_id', projectId)
-        .eq('is_active', true)
-        .order('progress_percentage', { ascending: false });
+        .select('id, code, name, unit, boq_qty');
       
-      if (error) throw error;
-      return data as ActivityProgress[];
+      if (activitiesError) throw activitiesError;
+
+      const { data: progress, error: progressError } = await supabase
+        .from('activity_progress_agg')
+        .select('*');
+      
+      if (progressError) throw progressError;
+
+      const result: ActivityProgress[] = activities.map(activity => {
+        const activityProgress = progress?.find(p => p.activity_id === activity.id);
+        return {
+          activity_id: activity.id,
+          activity_code: activity.code,
+          activity_name: activity.name,
+          unit: activity.unit,
+          boq_qty: activity.boq_qty,
+          qty_accum: activityProgress?.qty_accum || 0,
+          pct: activityProgress?.pct || 0,
+          last_updated: activityProgress?.last_updated || new Date().toISOString()
+        };
+      });
+
+      return result;
     },
     enabled: !!projectId
   });
@@ -124,66 +150,46 @@ export function useReports(projectId?: string) {
       if (!projectId) return null;
       
       if (!isConnected) {
-        // Usar datos mock para el resumen
         const activities = mockActivities.filter(a => a.project_id === projectId);
-        const reports = mockProgressReports.filter(r => r.project_id === projectId);
-        
         const totalActivities = activities.length;
         const completedActivities = activities.filter(a => a.executed_qty >= a.boq_qty).length;
         const totalProgress = activities.reduce((sum, a) => sum + a.executed_qty, 0);
         const totalBOQ = activities.reduce((sum, a) => sum + a.boq_qty, 0);
-        const completionPercentage = totalBOQ > 0 ? (totalProgress / totalBOQ) * 100 : 0;
-        
-        const averageDailyProgress = reports.length > 0 
-          ? reports.reduce((sum, r) => sum + r.total_progress, 0) / reports.length 
-          : 0;
+        const avgProgress = totalBOQ > 0 ? (totalProgress / totalBOQ) * 100 : 0;
 
         return {
           total_activities: totalActivities,
           completed_activities: completedActivities,
-          total_progress: totalProgress,
-          average_daily_progress: averageDailyProgress,
-          completion_percentage: completionPercentage
-        } as ProjectSummary;
+          total_progress: Math.round(totalProgress),
+          avg_progress: Math.round(avgProgress)
+        };
       }
       
-      // Get total activities
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
-        .select('id, boq_qty, executed_qty')
-        .eq('project_id', projectId)
-        .eq('is_active', true);
+        .select('id, boq_qty');
       
       if (activitiesError) throw activitiesError;
 
-      // Get daily progress for average calculation
-      const { data: dailyProgress, error: progressError } = await supabase
-        .from('progress_reports')
-        .select('total_progress, date')
-        .eq('project_id', projectId)
-        .eq('status', 'approved')
-        .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        .order('date', { ascending: false });
+      const { data: progress, error: progressError } = await supabase
+        .from('activity_progress_agg')
+        .select('*');
       
       if (progressError) throw progressError;
 
-      const totalActivities = activities.length;
-      const completedActivities = activities.filter(a => a.executed_qty >= a.boq_qty).length;
-      const totalProgress = activities.reduce((sum, a) => sum + a.executed_qty, 0);
-      const totalBOQ = activities.reduce((sum, a) => sum + a.boq_qty, 0);
-      const completionPercentage = totalBOQ > 0 ? (totalProgress / totalBOQ) * 100 : 0;
-      
-      const averageDailyProgress = dailyProgress.length > 0 
-        ? dailyProgress.reduce((sum, dp) => sum + dp.total_progress, 0) / dailyProgress.length 
+      const totalActivities = activities?.length || 0;
+      const completedActivities = progress?.filter(p => p.pct >= 1.0).length || 0;
+      const totalProgress = progress?.reduce((sum, p) => sum + p.qty_accum, 0) || 0;
+      const avgProgress = progress?.length 
+        ? (progress.reduce((sum, p) => sum + p.pct, 0) / progress.length) * 100
         : 0;
 
       return {
         total_activities: totalActivities,
         completed_activities: completedActivities,
-        total_progress: totalProgress,
-        average_daily_progress: averageDailyProgress,
-        completion_percentage: completionPercentage
-      } as ProjectSummary;
+        total_progress: Math.round(totalProgress),
+        avg_progress: Math.round(avgProgress)
+      };
     },
     enabled: !!projectId
   });
@@ -196,18 +202,19 @@ export function useReports(projectId?: string) {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pdf-report', {
+      const { data, error } = await supabase.functions.invoke('modern-pdf-report', {
         body: {
-          project_id: projectId,
-          report_type: reportType,
-          date_range: dateRange,
-          include_charts: true
+          projectId,
+          reportType,
+          dateRange: {
+            from: dateRange.startDate,
+            to: dateRange.endDate
+          }
         }
       });
 
       if (error) throw error;
 
-      // Download the generated PDF
       const blob = new Blob([data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -233,34 +240,30 @@ export function useReports(projectId?: string) {
     }
 
     try {
-      // Create CSV content
       const reportsCSV = [
-        'Fecha,Turno,Reportero,Estado,Actividades,Progreso,Notas',
+        'Fecha,Turno,Reportero,Estado,Notas',
         ...historicalReports.map(report => [
-          report.date,
+          report.report_date,
           report.shift,
-          report.reporter?.full_name || report.reporter?.email || 'N/A',
+          report.reporter_name || 'N/A',
           report.status,
-          report.total_activities,
-          report.total_progress,
           report.notes || ''
         ].join(','))
       ].join('\n');
 
       const activitiesCSV = [
-        'Código,Actividad,Unidad,BOQ,Ejecutado,Progreso%,Última Actualización',
+        'Código,Actividad,Unidad,BOQ,Acumulado,Progreso%,Última Actualización',
         ...activityProgress.map(activity => [
           activity.activity_code,
           activity.activity_name,
           activity.unit,
           activity.boq_qty,
-          activity.total_executed,
-          activity.progress_percentage,
+          activity.qty_accum,
+          Math.round(activity.pct * 100),
           new Date(activity.last_updated).toLocaleDateString()
         ].join(','))
       ].join('\n');
 
-      // Create zip file with both CSVs
       const zipContent = `Reportes\n${reportsCSV}\n\nActividades\n${activitiesCSV}`;
       
       const blob = new Blob([zipContent], { type: 'text/plain' });
@@ -288,15 +291,13 @@ export function useReports(projectId?: string) {
     const approved = historicalReports.filter(r => r.status === 'approved').length;
     const rejected = historicalReports.filter(r => r.status === 'rejected').length;
     const pending = historicalReports.filter(r => r.status === 'submitted').length;
-    const totalProgress = historicalReports.reduce((sum, r) => sum + r.total_progress, 0);
 
     return {
       total,
       approved,
       rejected,
       pending,
-      totalProgress,
-      averageProgress: total > 0 ? totalProgress / total : 0
+      averageProgress: 0
     };
   };
 

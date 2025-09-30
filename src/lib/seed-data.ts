@@ -237,38 +237,32 @@ export async function insertSeedData() {
       const sampleReports = [
         {
           project_id: project.id,
-          user_id: user.id,
-          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Ayer
-          shift: 'morning',
+          reporter_id: user.id,
+          report_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          shift: 'day',
           status: 'approved',
-          total_activities: 3,
-          total_progress: 12.5,
           notes: 'Trabajo normal, sin incidencias'
         },
         {
           project_id: project.id,
-          user_id: user.id,
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Hace 2 días
-          shift: 'afternoon',
+          reporter_id: user.id,
+          report_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          shift: 'night',
           status: 'approved',
-          total_activities: 2,
-          total_progress: 8.2,
           notes: 'Completado según plan'
         },
         {
           project_id: project.id,
-          user_id: user.id,
-          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Hace 3 días
-          shift: 'morning',
+          reporter_id: user.id,
+          report_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          shift: 'day',
           status: 'submitted',
-          total_activities: 4,
-          total_progress: 15.7,
           notes: 'Pendiente de aprobación'
         }
       ];
 
       const { error: reportsError } = await supabase
-        .from('progress_reports')
+        .from('daily_reports')
         .upsert(sampleReports);
 
       if (reportsError) throw reportsError;
@@ -280,8 +274,8 @@ export async function insertSeedData() {
         const report = sampleReports[i];
         
         if (insertedActivities && insertedActivities.length > 0) {
-          // Crear entradas para algunas actividades
-          const activitiesToInclude = insertedActivities.slice(0, report.total_activities);
+          // Crear entradas para algunas actividades (max 3)
+          const activitiesToInclude = insertedActivities.slice(0, 3);
           
           activitiesToInclude.forEach((activity, index) => {
             progressEntries.push({
