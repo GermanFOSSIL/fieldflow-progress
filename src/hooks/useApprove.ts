@@ -1,25 +1,21 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { mockProgressReports } from '@/lib/mock-data';
 import { useSupabaseConnection } from './useSupabaseConnection';
 import { toast } from 'sonner';
 
-interface ProgressReport {
+interface DailyReport {
   id: string;
   project_id: string;
-  user_id: string;
-  date: string;
-  shift: 'morning' | 'afternoon' | 'night';
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  total_activities: number;
-  total_progress: number;
+  reporter_id: string;
+  report_date: string;
+  shift: string;
+  status: string;
   notes?: string;
   created_at: string;
   updated_at: string;
   reporter?: {
     id: string;
-    email: string;
+    email?: string;
     full_name?: string;
   };
   entries?: ProgressEntry[];
@@ -27,15 +23,11 @@ interface ProgressReport {
 
 interface ProgressEntry {
   id: string;
+  daily_report_id: string;
   activity_id: string;
-  project_id: string;
-  user_id: string;
-  date: string;
-  shift: 'morning' | 'afternoon' | 'night';
-  quantity: number;
+  qty_today: number;
   comment?: string;
-  photos?: string[];
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  photo_urls?: string[];
   created_at: string;
   updated_at: string;
   activity?: {
@@ -51,24 +43,17 @@ export function useApprove(projectId?: string) {
   const queryClient = useQueryClient();
   const { isConnected } = useSupabaseConnection();
 
-  // Fetch pending reports
+  // Fetch pending reports (status = 'submitted')
   const { data: pendingReports, isLoading: reportsLoading } = useQuery({
     queryKey: ['pending-reports', projectId],
     queryFn: async () => {
-      if (!projectId) return [];
-      
-      if (!isConnected) {
-        return mockProgressReports.filter(report => 
-          report.project_id === projectId && 
-          report.status === 'submitted'
-        ) as ProgressReport[];
-      }
+      if (!projectId || !isConnected) return [];
       
       const { data, error } = await supabase
-        .from('progress_reports')
+        .from('daily_reports')
         .select(`
           *,
-          reporter:users(id, email, full_name),
+          reporter:users!daily_reports_reporter_id_fkey(id, full_name),
           entries:progress_entries(
             *,
             activity:activities(id, code, name, unit, boq_qty)
@@ -78,41 +63,50 @@ export function useApprove(projectId?: string) {
         .eq('status', 'submitted')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data as ProgressReport[];
+      if (error) {
+        console.error('Error fetching pending reports:', error);
+        return [];
+      }
+      
+      return data as DailyReport[];
     },
-    enabled: !!projectId
+    enabled: !!projectId && isConnected
   });
 
   // Fetch all reports for history
   const { data: allReports, isLoading: allReportsLoading } = useQuery({
     queryKey: ['all-reports', projectId],
     queryFn: async () => {
-      if (!projectId) return [];
+      if (!projectId || !isConnected) return [];
       
       const { data, error } = await supabase
-        .from('progress_reports')
+        .from('daily_reports')
         .select(`
           *,
-          reporter:users(id, email, full_name)
+          reporter:users!daily_reports_reporter_id_fkey(id, full_name)
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data as ProgressReport[];
+      if (error) {
+        console.error('Error fetching all reports:', error);
+        return [];
+      }
+      
+      return data as DailyReport[];
     },
-    enabled: !!projectId
+    enabled: !!projectId && isConnected
   });
 
   // Approve report mutation
   const approveReportMutation = useMutation({
     mutationFn: async ({ reportId, notes }: { reportId: string; notes?: string }) => {
       const { data, error } = await supabase
-        .from('progress_reports')
+        .from('daily_reports')
         .update({
           status: 'approved',
           notes: notes,
+          approved_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', reportId)
@@ -121,23 +115,13 @@ export function useApprove(projectId?: string) {
       
       if (error) throw error;
 
-      // Also approve all related entries
-      await supabase
-        .from('progress_entries')
-        .update({
-          status: 'approved',
-          updated_at: new Date().toISOString()
-        })
-        .eq('project_id', data.project_id)
-        .eq('date', data.date)
-        .eq('shift', data.shift);
-
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-reports'] });
       queryClient.invalidateQueries({ queryKey: ['all-reports'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-reports'] });
       toast.success('Reporte aprobado correctamente');
     },
     onError: (error) => {
@@ -150,7 +134,7 @@ export function useApprove(projectId?: string) {
   const rejectReportMutation = useMutation({
     mutationFn: async ({ reportId, reason }: { reportId: string; reason: string }) => {
       const { data, error } = await supabase
-        .from('progress_reports')
+        .from('daily_reports')
         .update({
           status: 'rejected',
           notes: reason,
@@ -162,22 +146,12 @@ export function useApprove(projectId?: string) {
       
       if (error) throw error;
 
-      // Also reject all related entries
-      await supabase
-        .from('progress_entries')
-        .update({
-          status: 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('project_id', data.project_id)
-        .eq('date', data.date)
-        .eq('shift', data.shift);
-
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pending-reports'] });
       queryClient.invalidateQueries({ queryKey: ['all-reports'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-reports'] });
       toast.success('Reporte rechazado');
     },
     onError: (error) => {
@@ -215,8 +189,8 @@ export function useApprove(projectId?: string) {
   };
 
   return {
-    pendingReports,
-    allReports,
+    pendingReports: pendingReports || [],
+    allReports: allReports || [],
     reportsLoading,
     allReportsLoading,
     approveReport,

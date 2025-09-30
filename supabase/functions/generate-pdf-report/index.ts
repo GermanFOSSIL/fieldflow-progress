@@ -23,7 +23,7 @@ serve(async (req) => {
     // Por ahora, retornamos un PDF simulado
     const pdfBuffer = generateMockPDF(reportData, reportType);
 
-    return new Response(pdfBuffer, {
+    return new Response(pdfBuffer.buffer, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/pdf',
