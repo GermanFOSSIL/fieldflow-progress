@@ -129,13 +129,13 @@ export default function Auth() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/dashboard`
+        redirectTo: `${window.location.origin}/auth?mode=reset`
       });
 
       if (error) {
         setError(error.message);
       } else {
-        setMessage("Se ha enviado un email con instrucciones para recuperar tu contraseña.");
+        setMessage("✅ Se ha enviado un email con instrucciones. Revisa tu bandeja de entrada y haz clic en el enlace para restablecer tu contraseña.");
       }
     } catch (err) {
       setError("Error al enviar el email de recuperación.");

@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplatePreview } from "./TemplatePreview";
 import { 
@@ -146,29 +145,19 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'menu': return <MessageSquare className="h-4 w-4" />;
-      case 'survey': return <ClipboardList className="h-4 w-4" />;
-      case 'progress_form': return <FileText className="h-4 w-4" />;
-      case 'alert_form': return <AlertCircle className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
-      <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl max-h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg">
-        <div className="h-full flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-            <h2 className="text-xl font-semibold">
-              {template ? 'Editar Template' : 'Nuevo Template'}
-            </h2>
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/80" onClick={onCancel} />
+      <div className="relative z-[101] w-full max-w-4xl max-h-[90vh] bg-background border shadow-2xl rounded-lg flex flex-col overflow-hidden m-4">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+          <h2 className="text-xl font-semibold">
+            {template ? 'Editar Template' : 'Nuevo Template'}
+          </h2>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
@@ -181,123 +170,123 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
             <TabsContent value="editor" className="flex-1 mx-6 mt-4">
               <div className="h-full overflow-y-auto pr-2 pb-6">
                 <div className="space-y-6">
-              {/* Basic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Información Básica</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Nombre del Template *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name || ''}
-                      onChange={(e) => handleBasicInfoChange('name', e.target.value)}
-                      placeholder="Ej: Menú Principal, Reporte de Avance"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="type">Tipo de Template *</Label>
-                    <Select value={formData.template_type} onValueChange={handleTypeChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="menu">
-                          <div className="flex items-center gap-2">
-                            <MessageSquare className="h-4 w-4" />
-                            Menú Interactivo
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="progress_form">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Formulario de Avance
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="survey">
-                          <div className="flex items-center gap-2">
-                            <ClipboardList className="h-4 w-4" />
-                            Encuesta
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="alert_form">
-                          <div className="flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            Formulario de Alerta
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="title">Título del Mensaje *</Label>
-                    <Input
-                      id="title"
-                      value={formData.content?.title || ''}
-                      onChange={(e) => handleContentChange('title', e.target.value)}
-                      placeholder="Ej: ¿En qué puedo ayudarte hoy?"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* Basic Information */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Información Básica</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="name">Nombre del Template *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name || ''}
+                          onChange={(e) => handleBasicInfoChange('name', e.target.value)}
+                          placeholder="Ej: Menú Principal, Reporte de Avance"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="type">Tipo de Template *</Label>
+                        <Select value={formData.template_type} onValueChange={handleTypeChange}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="menu">
+                              <div className="flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                Menú Interactivo
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="progress_form">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Formulario de Avance
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="survey">
+                              <div className="flex items-center gap-2">
+                                <ClipboardList className="h-4 w-4" />
+                                Encuesta
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="alert_form">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" />
+                                Formulario de Alerta
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="title">Título del Mensaje *</Label>
+                        <Input
+                          id="title"
+                          value={formData.content?.title || ''}
+                          onChange={(e) => handleContentChange('title', e.target.value)}
+                          placeholder="Ej: ¿En qué puedo ayudarte hoy?"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Menu Options */}
-              {formData.template_type === 'menu' && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Opciones del Menú</CardTitle>
-                      <Button onClick={addOption} size="sm" className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Agregar Opción
-                      </Button>
-                    </div>
-                  </CardHeader>
+                  {/* Menu Options */}
+                  {formData.template_type === 'menu' && (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle>Opciones del Menú</CardTitle>
+                          <Button onClick={addOption} size="sm" className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Agregar Opción
+                          </Button>
+                        </div>
+                      </CardHeader>
                       <CardContent>
-                        <div className="space-y-3 max-h-56 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    {formData.content?.options?.map((option, index) => (
+                        <div className="space-y-3 max-h-56 overflow-y-auto pr-2">
+                          {formData.content?.options?.map((option, index) => (
                             <div key={option.id} className="flex gap-2 items-center p-3 border rounded-lg bg-gray-50">
                               <GripVertical className="h-4 w-4 text-gray-400" />
                               <Badge variant="outline" className="min-w-[30px] text-center">
                                 {index + 1}
                               </Badge>
-                        <Input
-                          value={option.text}
-                          onChange={(e) => updateOption(index, 'text', e.target.value)}
-                          placeholder="Texto de la opción"
-                          className="flex-1"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeOption(index)}
-                          disabled={formData.content?.options?.length === 1}
+                              <Input
+                                value={option.text}
+                                onChange={(e) => updateOption(index, 'text', e.target.value)}
+                                placeholder="Texto de la opción"
+                                className="flex-1"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeOption(index)}
+                                disabled={formData.content?.options?.length === 1}
                                 className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                  </CardContent>
-                </Card>
-              )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Form Fields for other types */}
-              {formData.template_type !== 'menu' && (
-                <Card>
-                  <CardHeader>
-                      <CardTitle>Campos del Formulario</CardTitle>
-                  </CardHeader>
+                  {formData.template_type !== 'menu' && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Campos del Formulario</CardTitle>
+                      </CardHeader>
                       <CardContent>
                         <p className="text-sm text-gray-600">
                           Los campos del formulario se configurarán automáticamente según el tipo seleccionado.
                         </p>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
               </div>
@@ -308,19 +297,18 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
                 <TemplatePreview template={formData as WhatsAppTemplate} />
               </div>
             </TabsContent>
-      </Tabs>
+          </Tabs>
         </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0 mt-auto">
-            <Button variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} className="gap-2">
-              <Save className="h-4 w-4" />
-              Guardar Template
-            </Button>
-          </div>
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0">
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} className="gap-2">
+            <Save className="h-4 w-4" />
+            Guardar Template
+          </Button>
         </div>
       </div>
     </div>
